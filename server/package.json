@@ -1,0 +1,41 @@
+{
+  "name": "@seed/server",
+  "version": "1.0.0",
+  "description": "",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch index.ts",
+    "build": "rm -rf ./dist && tsc",
+    "lint": "tsc --noEmit",
+    "start": "node dist/src/index.js",
+    "clean": "rm -rf ./dist"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@seed/database": "workspace:*",
+    "@trpc/server": "^11.7.2",
+    "axios": "^1.7.9",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^5.2.1",
+    "google-auth-library": "^10.5.0",
+    "jsonwebtoken": "^9.0.2",
+    "ms": "^2.1.3",
+    "nodemailer": "^7.0.11",
+    "superjson": "^2.2.2",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/cookie-parser": "^1.4.10",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/ms": "^2.1.0",
+    "@types/nodemailer": "^7.0.4",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}

@@ -1,0 +1,16 @@
+packages:
+  - './*'
+
+catalogs:
+  prisma:
+    prisma: latest
+    '@prisma/client': latest
+
+  trpc:
+    '@trpc/server': latest
+    '@trpc/client': latest
+    '@trpc/react-query': latest
+
+  default:
+    typescript: latest
+    '@types/node': latest

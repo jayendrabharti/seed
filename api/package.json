@@ -1,0 +1,53 @@
+{
+  "name": "@seed/api",
+  "version": "1.0.0",
+  "description": "",
+  "exports": {
+    ".": {
+      "import": "./index.ts",
+      "types": "./index.ts"
+    },
+    "./client": {
+      "import": "./client.ts",
+      "types": "./client.ts"
+    },
+    "./server": {
+      "react-server": "./server.ts",
+      "import": "./server.ts",
+      "types": "./server.ts"
+    },
+    "./types": {
+      "import": "./types.ts",
+      "types": "./types.ts"
+    },
+    "./provider": {
+      "import": "./Provider.tsx",
+      "types": "./Provider.tsx"
+    },
+    "./static": {
+      "import": "./static.ts",
+      "types": "./static.ts"
+    }
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@seed/server": "workspace:*",
+    "@tanstack/react-query": "^5.90.12",
+    "@trpc/client": "^11.7.2",
+    "@trpc/react-query": "^11.7.2"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.7",
+    "next": "16.0.8",
+    "react": "19.2.1"
+  },
+  "peerDependencies": {
+    "next": "16.0.8",
+    "react": "19.2.1"
+  }
+}

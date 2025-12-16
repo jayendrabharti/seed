@@ -1,11 +1,12 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
-import { TRPCProvider } from '@seed/api/provider';
 import { Toaster } from '@/components/ui/sonner';
 import SessionProvider from '@/providers/SessionProvider';
 import { DataProvider } from '@/providers/DataProvider';
 import { ThemeProvider } from '@/providers/ThemeProvider';
+import { TRPCProvider } from '@/providers/TRPCProvider';
+import { cn } from '@/lib/utils';
 const geistSans = Geist({
   variable: '--font-geist-sans',
   subsets: ['latin'],
@@ -29,16 +30,17 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={cn(
+          `${geistSans.variable} ${geistMono.variable} bg-background antialiased`,
+          'h-dvh w-full',
+        )}
       >
         <ThemeProvider>
           <TRPCProvider>
-            <DataProvider>
-              <SessionProvider>
-                {children}
-                <Toaster richColors />
-              </SessionProvider>
-            </DataProvider>
+            <SessionProvider>
+              {children}
+              <Toaster richColors />
+            </SessionProvider>
           </TRPCProvider>
         </ThemeProvider>
       </body>

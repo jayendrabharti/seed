@@ -19,5 +19,5 @@ export const formatTimestamp = (
   }
 
   // Format 1: Full timestamp (e.g., "15 January 2024 • 2:30 pm")
-  return `${day} ${month} ${year} • ${hours}:${minutes} ${ampm}`;
+  return `${day} ${month.slice(0, 3)} ${year} • ${hours}:${minutes} ${ampm}`;
 };

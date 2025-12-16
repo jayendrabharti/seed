@@ -75,7 +75,7 @@ export default function UserButton({
               <DropdownMenuSeparator />
 
               <div className="flex flex-col gap-2 p-1">
-                <Link href="/profile" prefetch={true}>
+                <Link href="/account" prefetch={true}>
                   <Button
                     variant={'outline'}
                     className="mx-auto flex w-full items-center justify-start"
@@ -142,7 +142,7 @@ export default function UserButton({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <div className="flex flex-col gap-2 p-1">
-              <Link href="/profile" prefetch={true}>
+              <Link href="/account" prefetch={true}>
                 <Button
                   variant={'outline'}
                   className="mx-auto flex w-full items-center justify-start"

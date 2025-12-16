@@ -8,6 +8,22 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+// --- Environment Variable Validation ---
+const requiredEnvVars = [
+  'REFRESH_TOKEN_SECRET',
+  'ACCESS_TOKEN_SECRET',
+  'GOOGLE_CLIENT_ID',
+  'GOOGLE_CLIENT_SECRET',
+  'FRONTEND_URL',
+] as const;
+
+for (const envVar of requiredEnvVars) {
+  if (!process.env[envVar]) {
+    console.error(`❌ Missing required environment variable: ${envVar}`);
+    throw new Error(`Missing required environment variable: ${envVar}`);
+  }
+}
+
 // --- Secrets and Keys ---
 export const refreshSecret: jwt.Secret = process.env.REFRESH_TOKEN_SECRET!;
 
@@ -45,10 +61,25 @@ export const refreshTokenCookieOptions: CookieOptions = {
 export const clientBaseUrl = process.env.FRONTEND_URL!;
 
 // --- Test User Configuration ---
-export const testMail = process.env.TEST_MAIL ?? null;
-export const testOtp = process.env.TEST_OTP ?? null;
+// Only enable test user in development mode
+export const testMail =
+  process.env.NODE_ENV !== 'production'
+    ? (process.env.TEST_MAIL ?? null)
+    : null;
+export const testOtp =
+  process.env.NODE_ENV !== 'production' ? (process.env.TEST_OTP ?? null) : null;
 export const testUser =
   testMail && testOtp ? { email: testMail, otp: testOtp } : null;
+
+// Log warning if test credentials are configured in production
+if (
+  process.env.NODE_ENV === 'production' &&
+  (process.env.TEST_MAIL || process.env.TEST_OTP)
+) {
+  console.warn(
+    '⚠️  WARNING: Test credentials are configured in production environment. This is a security risk!',
+  );
+}
 
 export function getExpiryDate(timeString: string) {
   const milliseconds = ms(timeString as StringValue);
@@ -59,14 +90,32 @@ export const generateTokens = async (
   req: Request,
   res: Response,
   user: UserModel,
+  method: 'cookie' | 'return' | 'both' = 'both',
 ) => {
   const clientRefreshToken =
     req.cookies['refresh-token'] ||
     req.headers.authorization?.replace('Bearer ', '');
 
+  // Revoke old refresh token if it exists and is different from what we're about to create
   if (clientRefreshToken) {
     try {
-      jwt.verify(clientRefreshToken, refreshSecret);
+      const payload = jwt.verify(
+        clientRefreshToken,
+        refreshSecret,
+      ) as RefreshTokenPayload;
+
+      // Check if token was created very recently (within last 5 seconds)
+      // If so, skip revocation to avoid revoking a token we just created
+      const tokenAge = Date.now() - new Date(payload.createdAt).getTime();
+      if (tokenAge < 5000) {
+        // Token was just created, skip revocation
+        return {
+          accessToken: req.cookies['access-token'] || '',
+          refreshToken: clientRefreshToken,
+          accessTokenCookieOptions,
+          refreshTokenCookieOptions,
+        };
+      }
 
       // Valid token found - revoke it since user is requesting new tokens
       const existingToken = await prisma.refreshToken.findUnique({
@@ -142,9 +191,17 @@ export const generateTokens = async (
     },
   });
 
-  res
-    .cookie('access-token', accessToken, accessTokenCookieOptions)
-    .cookie('refresh-token', refreshToken, refreshTokenCookieOptions);
+  // Set cookies based on method
+  if (method === 'cookie' || method === 'both') {
+    res
+      .cookie('access-token', accessToken, accessTokenCookieOptions)
+      .cookie('refresh-token', refreshToken, refreshTokenCookieOptions);
+  }
 
-  return { accessToken, refreshToken };
+  return {
+    accessToken,
+    refreshToken,
+    accessTokenCookieOptions,
+    refreshTokenCookieOptions,
+  };
 };

@@ -19,10 +19,12 @@ model User {
   picture   String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  refreshTokens      RefreshToken[]
+
+  refreshTokens   RefreshToken[]
+  businessesOwned Business[]     @relation("BusinessOwner")
+
   @@map("users")
 }
-
 
 model RefreshToken {
   id         String   @id @default(cuid())
@@ -51,4 +53,27 @@ model otp {
   updatedAt  DateTime  @updatedAt
 
   @@map("otps")
+}
+
+// -----------------------------------------------------
+// BUSINESS MANAGEMENT
+// -----------------------------------------------------
+
+model Business {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  email       String?
+  phone       String?
+  logoImage   String?
+  website     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Owner relationship
+  ownerId String
+  owner   User   @relation("BusinessOwner", fields: [ownerId], references: [id])
+
+  @@map("businesses")
+  @@unique([ownerId, name])
 }

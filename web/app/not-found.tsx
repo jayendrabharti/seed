@@ -1,30 +1,32 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { FileQuestion, Home } from "lucide-react";
-import Link from "next/link";
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { BanIcon, HomeIcon, LayoutDashboardIcon } from 'lucide-react';
 
-export default function NotFound() {
+export default async function NotFound() {
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileQuestion className="h-5 w-5" />
-            Page Not Found
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-muted-foreground text-sm">
-            The page you're looking for doesn't exist or has been moved.
-          </p>
-          <Link href="/" className="block">
-            <Button className="w-full">
-              <Home className="mr-2 h-4 w-4" />
-              Back to Home
-            </Button>
+    <div className="flex h-dvh w-full flex-col items-center justify-center space-y-5">
+      <BanIcon className="text-destructive size-20 font-bold" />
+      <div className="flex flex-col items-center">
+        <span className="text-destructive text-4xl font-extrabold">
+          Not found
+        </span>
+        <span className="text-muted-foreground">This page does not exist.</span>
+      </div>
+
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <Button variant={'outline'} className="active:scale-90">
+          <HomeIcon className="size-4" />
+          <Link href={'/'} prefetch={true}>
+            Homepage
           </Link>
-        </CardContent>
-      </Card>
+        </Button>
+        <Button variant={'outline'} className="active:scale-90">
+          <LayoutDashboardIcon className="size-4" />
+          <Link href={'/dashboard'} prefetch={true}>
+            Dashboard
+          </Link>
+        </Button>
+      </div>
     </div>
   );
 }

@@ -29,7 +29,7 @@ export default function GoogleButton({
         toast.success('Logged in with Google successfully!');
         await refreshSession();
         if (type === 'redirect') {
-          router.push(redirect || '/stocks');
+          router.push(redirect || '/');
         }
       } else if (event.data === 'logged-in-failed') {
         toast.error('Google Login failed. Please try again.');
@@ -46,7 +46,7 @@ export default function GoogleButton({
         toast.success('Logged in with Google successfully!');
         await refreshSession();
         if (type === 'redirect') {
-          router.push(redirect || '/stocks');
+          router.push(redirect || '/');
         }
       }
     };
@@ -55,7 +55,7 @@ export default function GoogleButton({
       window.removeEventListener('message', handleMessage);
       channel.close();
     };
-  }, [redirect, router, refreshSession]);
+  }, [type, redirect, router, refreshSession]);
 
   const handleGoogleLogin = async () => {
     try {
@@ -66,7 +66,15 @@ export default function GoogleButton({
         toast.error('Error while Google Login...');
         return;
       }
-      window.open(data.url, 'googleLogin', 'width=600,height=600');
+      const width = 600;
+      const height = 600;
+      const left = (window.screen.width - width) / 2;
+      const top = (window.screen.height - height) / 2;
+      window.open(
+        data.url,
+        'googleLogin',
+        `width=${width},height=${height},left=${left},top=${top}`,
+      );
     } catch {
       toast.error('Error while Google Login...');
     }

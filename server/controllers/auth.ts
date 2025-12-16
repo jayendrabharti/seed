@@ -5,18 +5,21 @@ import crypto from 'crypto';
 import sendMail from '../helpers/sendMail';
 import {
   accessTokenCookieOptions,
-  accessTokenExpiry,
   generateTokens,
-  getExpiryDate,
   refreshSecret,
   refreshTokenCookieOptions,
-  refreshTokenExpiry,
   testUser,
 } from '../helpers/auth';
 import { oAuth2Client } from '../helpers/googleClient';
 import axios from 'axios';
 import jwt from 'jsonwebtoken';
 import { protectedProcedure, publicProcedure } from '../trpc/procedures';
+import {
+  cleanupExpiredTokens,
+  getUserActiveSessions,
+  revokeSession,
+  revokeAllUserTokens,
+} from '../helpers/tokenManagement';
 
 export const getUser = protectedProcedure.query(async ({ ctx }) => {
   const user = await prisma.user.findUnique({
@@ -176,7 +179,12 @@ export const emailVerify = publicProcedure
 
     const user = await prisma.user.findUnique({ where: { email } });
 
-    const { accessToken, refreshToken } = await generateTokens(req, res, user!);
+    const { accessToken, refreshToken } = await generateTokens(
+      req,
+      res,
+      user!,
+      'cookie',
+    );
 
     return {
       accessToken,
@@ -240,24 +248,30 @@ export const googleAuthCallback = publicProcedure
     }
 
     // 🔐 sets httpOnly cookies
-    await generateTokens(req, res, user);
+    await generateTokens(req, res, user, 'cookie');
 
     return { success: true };
   });
 
 export const logout = protectedProcedure.mutation(
-  async ({ ctx: { req, res } }) => {
+  async ({ ctx: { req, res, userId } }) => {
     const clientRefreshToken =
-      req.cookies?.refreshToken || req.headers['refresh-token'];
+      req.cookies?.['refresh-token'] || req.headers['refresh-token'];
 
+    // Revoke the specific refresh token if provided
     if (clientRefreshToken) {
-      await prisma.refreshToken.deleteMany({
+      await prisma.refreshToken.updateMany({
         where: {
           token: clientRefreshToken,
+          userId: userId,
+        },
+        data: {
+          isRevoked: true,
         },
       });
     }
 
+    // Clear cookies
     res
       .clearCookie('access-token', accessTokenCookieOptions)
       .clearCookie('refresh-token', refreshTokenCookieOptions);
@@ -266,14 +280,23 @@ export const logout = protectedProcedure.mutation(
   },
 );
 
-export const refreshUserToken = publicProcedure.query(
-  async ({ ctx: { req, res } }) => {
+export const getNewAccessToken = publicProcedure
+  .input(
+    z.object({
+      refreshToken: z.string().optional(),
+      method: z.enum(['cookie', 'return', 'both']).default('both'),
+    }),
+  )
+  .query(async ({ input: { refreshToken, method }, ctx: { req, res } }) => {
     const clientRefreshToken =
-      req.cookies?.refreshToken || req.headers['refresh-token'];
+      req.cookies?.['refresh-token'] ||
+      req.headers['refresh-token'] ||
+      refreshToken;
+
     if (!clientRefreshToken) {
       throw new TRPCError({
         code: 'UNAUTHORIZED',
-        message: 'Unauthorized request',
+        message: 'No refresh token provided',
       });
     }
 
@@ -297,76 +320,100 @@ export const refreshUserToken = publicProcedure.query(
       include: { user: true },
     });
 
-    if (!dbRefreshToken?.user) {
+    if (!dbRefreshToken) {
       throw new TRPCError({
         code: 'UNAUTHORIZED',
-        message: 'Invalid refresh token',
+        message: 'Refresh token not found in database',
       });
     }
 
-    const { accessToken, refreshToken } = await generateTokens(
-      req,
-      res,
-      dbRefreshToken.user,
-    );
+    if (dbRefreshToken.isRevoked) {
+      throw new TRPCError({
+        code: 'UNAUTHORIZED',
+        message: 'Refresh token has been revoked',
+      });
+    }
+
+    if (dbRefreshToken.expiresAt < new Date()) {
+      // Clean up expired token
+      await prisma.refreshToken.delete({
+        where: { id: dbRefreshToken.id },
+      });
+      throw new TRPCError({
+        code: 'UNAUTHORIZED',
+        message: 'Refresh token has expired',
+      });
+    }
+
+    if (!dbRefreshToken.user) {
+      throw new TRPCError({
+        code: 'NOT_FOUND',
+        message: 'User not found',
+      });
+    }
+
+    const {
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
+      accessTokenCookieOptions,
+      refreshTokenCookieOptions,
+    } = await generateTokens(req, res, dbRefreshToken.user, method);
 
     return {
-      accessToken,
-      refreshToken,
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
+      accessTokenCookieOptions,
+      refreshTokenCookieOptions,
+    };
+  });
+
+// Session management endpoints
+export const getActiveSessions = protectedProcedure.query(
+  async ({ ctx: { userId } }) => {
+    const sessions = await getUserActiveSessions(userId);
+    return sessions;
+  },
+);
+
+export const revokeSessionById = protectedProcedure
+  .input(
+    z.object({
+      sessionId: z.string(),
+    }),
+  )
+  .mutation(async ({ input: { sessionId }, ctx: { userId } }) => {
+    const revoked = await revokeSession(sessionId, userId);
+    if (!revoked) {
+      throw new TRPCError({
+        code: 'NOT_FOUND',
+        message: 'Session not found or already revoked',
+      });
+    }
+    return { message: 'Session revoked successfully', success: true };
+  });
+
+export const revokeAllSessions = protectedProcedure.mutation(
+  async ({ ctx: { userId, res } }) => {
+    const count = await revokeAllUserTokens(userId);
+
+    // Clear current session cookies
+    res
+      .clearCookie('access-token', accessTokenCookieOptions)
+      .clearCookie('refresh-token', refreshTokenCookieOptions);
+
+    return {
+      message: `All ${count} sessions revoked successfully`,
+      success: true,
+      count,
     };
   },
 );
 
-export const getNewAccessToken = publicProcedure.query(
-  async ({ ctx: { req, res } }) => {
-    const clientRefreshToken =
-      req.cookies?.refreshToken || req.headers['refresh-token'];
-
-    if (!clientRefreshToken) {
-      throw new TRPCError({
-        code: 'UNAUTHORIZED',
-        message: 'Unauthorized request',
-      });
-    }
-
-    let userId: string;
-    try {
-      const payload = jwt.verify(
-        clientRefreshToken,
-        refreshSecret,
-      ) as RefreshTokenPayload;
-      userId = payload.userId;
-    } catch (error) {
-      throw new TRPCError({
-        code: 'UNAUTHORIZED',
-        message: 'Invalid or expired refresh token',
-        cause: error,
-      });
-    }
-
-    const dbRefreshToken = await prisma.refreshToken.findUnique({
-      where: { userId: userId, token: clientRefreshToken },
-      include: { user: true },
-    });
-
-    if (!dbRefreshToken?.user) {
-      throw new TRPCError({
-        code: 'UNAUTHORIZED',
-        message: 'Invalid refresh token',
-      });
-    }
-
-    const { accessToken, refreshToken } = await generateTokens(
-      req,
-      res,
-      dbRefreshToken.user,
-    );
-
-    return {
-      accessToken,
-      accessTokenExpiresAt: getExpiryDate(accessTokenExpiry),
-      refreshToken,
-      refreshTokenExpiresAt: getExpiryDate(refreshTokenExpiry),
-    };
-  },
-);
+// Admin endpoint to clean up expired tokens
+export const cleanupTokens = protectedProcedure.mutation(async () => {
+  const result = await cleanupExpiredTokens();
+  return {
+    message: 'Token cleanup completed',
+    ...result,
+  };
+});

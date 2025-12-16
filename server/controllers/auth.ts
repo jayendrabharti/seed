@@ -1,5 +1,5 @@
 import { prisma } from '@seed/database';
-import z from 'zod';
+import * as z from 'zod';
 import { TRPCError } from '@trpc/server';
 import crypto from 'crypto';
 import sendMail from '../helpers/sendMail';
@@ -20,6 +20,7 @@ import {
   revokeSession,
   revokeAllUserTokens,
 } from '../helpers/tokenManagement';
+import { RefreshTokenPayload } from '../types/auth';
 
 export const getUser = protectedProcedure.query(async ({ ctx }) => {
   const user = await prisma.user.findUnique({

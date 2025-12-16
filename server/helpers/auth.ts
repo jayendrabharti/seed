@@ -5,6 +5,7 @@ import { Request, Response } from 'express';
 import { prisma } from '@seed/database';
 import type { UserModel } from '@seed/database/generated/models';
 import dotenv from 'dotenv';
+import { AccessTokenPayload, RefreshTokenPayload } from '../types/auth';
 
 dotenv.config();
 

@@ -2,6 +2,7 @@ import { TRPCError } from '@trpc/server';
 import { t } from './index';
 import jwt from 'jsonwebtoken';
 import { accessSecret } from '../helpers/auth';
+import { AccessTokenPayload } from '../types/auth';
 
 export const isAuthed = t.middleware(({ ctx, next }) => {
   if (!ctx.accessToken) {

@@ -1,6 +1,6 @@
 import { prisma } from '@seed/database';
 import { protectedProcedure } from '../trpc/procedures';
-import z from 'zod';
+import * as z from 'zod';
 import { TRPCError } from '@trpc/server';
 
 export const getBusinesses = protectedProcedure.query(

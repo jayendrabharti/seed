@@ -1,4 +1,4 @@
-interface AccessTokenPayload {
+export interface AccessTokenPayload {
   id: string;
   email: string;
   phone: string | null;
@@ -8,7 +8,7 @@ interface AccessTokenPayload {
   updatedAt: string;
 }
 
-interface RefreshTokenPayload {
+export interface RefreshTokenPayload {
   userId: string;
   createdAt: string;
 }

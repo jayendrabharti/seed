@@ -39,7 +39,8 @@
     "@seed/server": "workspace:*",
     "@tanstack/react-query": "^5.90.12",
     "@trpc/client": "^11.7.2",
-    "@trpc/react-query": "^11.7.2"
+    "@trpc/react-query": "^11.7.2",
+    "superjson": "^2.2.6"
   },
   "devDependencies": {
     "@types/react": "^19.2.7",

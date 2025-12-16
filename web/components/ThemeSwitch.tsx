@@ -54,7 +54,7 @@ export default function ThemeSwitch({ className }: ThemeSwitchProps) {
             <ChevronDownIcon />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="flex min-w-[200px] flex-col gap-2 p-2">
+        <DropdownMenuContent className="flex min-w-50 flex-col gap-2 p-2">
           {themePresets.map((preset) => {
             const colors = isDark ? preset.colors.dark : preset.colors.light;
             return (

@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { useSession } from '@/providers/SessionProvider';
 import { motion, AnimatePresence } from 'motion/react';
 import LoginButton from './LoginButton';
+import { MdDashboard } from 'react-icons/md';
 
 export default function UserButton({
   className = '',
@@ -42,7 +43,7 @@ export default function UserButton({
         <div className={cn('flex items-center', className)}>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Avatar className="cursor-pointer">
+              <Avatar className="cursor-pointer border shadow-md">
                 <AvatarImage
                   src={user.picture ?? '/images/blankProfilePicture.jpg'}
                 />
@@ -75,6 +76,16 @@ export default function UserButton({
               <DropdownMenuSeparator />
 
               <div className="flex flex-col gap-2 p-1">
+                <Link href="/dashboard" prefetch={true}>
+                  <Button
+                    variant={'outline'}
+                    className="mx-auto flex w-full items-center justify-start"
+                  >
+                    <MdDashboard />
+                    Dashboard
+                  </Button>
+                </Link>
+
                 <Link href="/account" prefetch={true}>
                   <Button
                     variant={'outline'}

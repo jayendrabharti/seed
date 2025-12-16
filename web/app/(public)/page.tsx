@@ -1,9 +1,23 @@
-import UserButton from '@/components/auth/UserButton';
+import { Hero } from '@/components/home/hero';
+import { Features } from '@/components/home/features';
+import { Benefits } from '@/components/home/benefits';
+import { SocialProof } from '@/components/home/social-proof';
+import { Pricing } from '@/components/home/pricing';
+import { CTA } from '@/components/home/cta';
+import { Navigation } from '@/components/home/navigation';
+import { Footer } from '@/components/home/footer';
 
-export default async function Home() {
+export default function Page() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <UserButton />
+    <div className="bg-background min-h-screen">
+      <Navigation />
+      <Hero />
+      <SocialProof />
+      <Features />
+      <Benefits />
+      <Pricing />
+      <CTA />
+      <Footer />
     </div>
   );
 }

@@ -5,11 +5,10 @@
   "private": true,
   "scripts": {
     "dev": "tsx watch index.ts",
-    "prebuild": "pnpm --filter @seed/database db:generate && pnpm --filter @seed/database build",
     "build": "tsc",
     "lint": "tsc --noEmit",
     "start": "node dist/index.js",
-    "clean": "rm -rf dist && pnpm --filter @seed/database clean"
+    "clean": "rm -rf dist"
   },
   "keywords": [],
   "author": "",

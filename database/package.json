@@ -5,12 +5,14 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
+    "prebuild": "prisma generate",
     "build": "tsc",
+    "clean": "rm -rf dist",
+    "lint": "tsc --noEmit",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
-    "db:studio": "prisma studio",
-    "clean": "rm -rf dist"
+    "db:studio": "prisma studio"
   },
   "keywords": [],
   "author": "",

@@ -17,9 +17,8 @@ import AddNewBusiness from './AddNewBusiness';
 import { useBusiness } from '@/providers/BusinessProvider';
 
 export default function BusinessSwitcher({ expanded }: { expanded: boolean }) {
-  const { businessId, switchBusinessId, businesses } = useBusiness();
-
-  const selectedBusiness = businesses?.find((b) => b.id === businessId);
+  const { businessId, switchBusinessId, businesses, currentBusiness } =
+    useBusiness();
 
   return (
     <DropdownMenu>
@@ -32,13 +31,13 @@ export default function BusinessSwitcher({ expanded }: { expanded: boolean }) {
         >
           <Avatar className="size-10">
             <AvatarImage
-              src={selectedBusiness?.logoImage || ''}
-              alt={selectedBusiness?.name || ''}
+              src={currentBusiness?.logoImage || ''}
+              alt={currentBusiness?.name || ''}
             />
             <AvatarFallback
               className={cn('text-background bg-primary text-xs')}
             >
-              {selectedBusiness?.name?.slice(0, 2).toUpperCase() || 'NA'}
+              {currentBusiness?.name?.slice(0, 2).toUpperCase() || 'NA'}
             </AvatarFallback>
           </Avatar>
 
@@ -48,7 +47,7 @@ export default function BusinessSwitcher({ expanded }: { expanded: boolean }) {
               expanded ? 'pointer-events-auto opacity-100' : '',
             )}
           >
-            {selectedBusiness?.name || 'Select Business'}
+            {currentBusiness?.name || 'Select Business'}
           </span>
 
           <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />

@@ -6,6 +6,7 @@ import { Separator } from '../ui/separator';
 import NavExpandToggle from './NavExpandToggle';
 import BreadCrumb from './BreadCrumb';
 import Notifications from './Notifications';
+import Logo from '../Logo';
 export default function Header() {
   return (
     <header
@@ -18,6 +19,8 @@ export default function Header() {
       <Separator orientation={'vertical'} />
 
       <BreadCrumb />
+
+      <Logo className="mx-auto" />
 
       <Notifications className="ml-auto" />
 

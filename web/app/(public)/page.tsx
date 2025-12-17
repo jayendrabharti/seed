@@ -4,13 +4,11 @@ import { Benefits } from '@/components/home/benefits';
 import { SocialProof } from '@/components/home/social-proof';
 import { Pricing } from '@/components/home/pricing';
 import { CTA } from '@/components/home/cta';
-import { Navigation } from '@/components/home/navigation';
 import { Footer } from '@/components/home/footer';
 
 export default function Page() {
   return (
-    <div className="bg-background min-h-screen">
-      <Navigation />
+    <>
       <Hero />
       <SocialProof />
       <Features />
@@ -18,6 +16,6 @@ export default function Page() {
       <Pricing />
       <CTA />
       <Footer />
-    </div>
+    </>
   );
 }

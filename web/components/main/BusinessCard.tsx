@@ -8,19 +8,17 @@ import { Loader2Icon, PencilIcon, Trash2Icon } from 'lucide-react';
 import { Separator } from '@radix-ui/react-separator';
 import { formatTimestamp } from '@/utils';
 import { Badge } from '../ui/badge';
+import DeleteDialogButton from './DeleteDialogButton';
 
 export default function BusinessCard({ business }: { business: Business }) {
-  const { businessId, switchBusinessId, renameBusiness, deleteBusiness } =
+  const { currentBusiness, switchBusinessId, renameBusiness, deleteBusiness } =
     useBusiness();
 
-  const [deleting, startDeleting] = useTransition();
   const [upadating, startUpdating] = useTransition();
   const [switching, startSwitching] = useTransition();
 
   const deleteThisBusiness = async () => {
-    startDeleting(async () => {
-      await deleteBusiness({ id: business.id });
-    });
+    await deleteBusiness({ id: business.id });
   };
 
   const updateThisBusiness = async () => {
@@ -53,13 +51,7 @@ export default function BusinessCard({ business }: { business: Business }) {
             <PencilIcon />
           )}
         </Button>
-        <Button
-          variant={'destructive'}
-          size={'icon'}
-          onClick={deleteThisBusiness}
-        >
-          {deleting ? <Loader2Icon className="animate-spin" /> : <Trash2Icon />}
-        </Button>
+        <DeleteDialogButton onDelete={deleteThisBusiness} />
       </div>
       <Separator className="my-1" />
       <span className="text-xs text-zinc-400">
@@ -70,7 +62,7 @@ export default function BusinessCard({ business }: { business: Business }) {
       </span>
       <Separator className="mt-1" />
       <div className="mt-2 flex w-full flex-row items-center justify-end">
-        {businessId == business.id ? (
+        {currentBusiness?.id == business.id ? (
           <Badge>Current</Badge>
         ) : (
           <Button

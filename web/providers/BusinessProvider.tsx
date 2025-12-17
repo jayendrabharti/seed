@@ -99,7 +99,6 @@ export function BusinessProvider({
     }
   };
 
-  // const currentBusiness = businesses?.find((biz) => biz.id === businessId);
   const currentBusiness = useMemo(
     () => businesses?.find((biz) => biz.id === businessId) ?? businesses?.[0],
     [businesses, businessId],

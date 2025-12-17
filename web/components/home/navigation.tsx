@@ -4,9 +4,12 @@ import ThemeSwitch from '../ThemeSwitch';
 import UserButton from '../auth/UserButton';
 import { useSession } from '@/providers/SessionProvider';
 import { Button } from '../ui/button';
+import { usePathname } from 'next/navigation';
+import { cn } from '@/lib/utils';
 
 export function Navigation() {
   const { isAuthenticated } = useSession();
+  const pathname = usePathname();
 
   return (
     <header className="border-border/40 bg-background/95 supports-backdrop-filter:bg-background/60 sticky top-0 z-50 w-full border-b backdrop-blur">
@@ -18,7 +21,12 @@ export function Navigation() {
             </div>
             <span className="text-xl font-bold">SEED</span>
           </Link>
-          <div className="hidden items-center gap-6 md:flex">
+          <div
+            className={cn(
+              'hidden items-center gap-6 md:flex',
+              pathname !== '/' && 'md:hidden',
+            )}
+          >
             <Link
               href="#features"
               className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors"

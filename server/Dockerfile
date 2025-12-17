@@ -1,4 +1,6 @@
-# Build stage
+# ========================
+# Builder stage
+# ========================
 FROM node:24-alpine AS builder
 
 # Install pnpm
@@ -6,16 +8,14 @@ RUN npm install -g pnpm
 
 WORKDIR /app
 
-# Copy workspace configuration
+# Copy workspace config
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json ./
 
-# Copy database package
+# Copy packages
 COPY database ./database
-
-# Copy server package
 COPY server ./server
 
-# Install dependencies - use default pnpm behavior
+# Install all dependencies (needed for build)
 RUN pnpm install --frozen-lockfile
 
 # Generate Prisma client
@@ -24,10 +24,13 @@ RUN pnpm --filter @seed/database db:generate
 # Build database package
 RUN pnpm --filter @seed/database build
 
-# Build server
+# Build server package
 RUN pnpm --filter @seed/server build
 
-# Production stage
+
+# ========================
+# Runner stage
+# ========================
 FROM node:24-alpine AS runner
 
 # Install pnpm
@@ -35,35 +38,35 @@ RUN npm install -g pnpm
 
 WORKDIR /app
 
-# Copy workspace configuration
+ENV NODE_ENV=production
+ENV PORT=8080
+
+# Copy workspace config (required for pnpm)
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
-# Copy database package.json and built files
+# Copy built database package
 COPY --from=builder /app/database/package.json ./database/
 COPY --from=builder /app/database/dist ./database/dist
 COPY --from=builder /app/database/generated ./database/generated
 COPY --from=builder /app/database/prisma ./database/prisma
+COPY --from=builder /app/database/prisma.config.ts ./database/
 
-# Copy server package.json and built files
+# Copy built server package
 COPY --from=builder /app/server/package.json ./server/
 COPY --from=builder /app/server/dist ./server/dist
 
 # Install production dependencies only
 RUN pnpm install --prod --frozen-lockfile
 
-ENV NODE_ENV=production
-ENV PORT=8080
+# Copy entrypoint
+COPY server/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Expose server port
 EXPOSE 8080
 
-# Health check
+# Healthcheck
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://0.0.0.0:8080/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })" || exit 1
+  CMD node -e "require('http').get('http://127.0.0.1:8080/health', res => process.exit(res.statusCode === 200 ? 0 : 1))"
 
-
-# Set working directory to server
-WORKDIR /app/server
-
-# Start the server
-CMD ["node", "dist/index.js"]
+ENTRYPOINT ["docker-entrypoint.sh"]

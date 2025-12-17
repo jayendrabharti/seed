@@ -18,8 +18,7 @@ COPY server ./server
 # Install all dependencies (needed for build)
 RUN pnpm install --frozen-lockfile
 
-# Generate Prisma client (with dummy DATABASE_URL for build time)
-ENV DATABASE_URL="postgresql://user:pass@localhost:5432/db"
+# Generate Prisma client
 RUN pnpm --filter @seed/database db:generate
 
 # Build database package

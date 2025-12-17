@@ -58,10 +58,6 @@ COPY --from=builder /app/server/dist ./server/dist
 # Install production dependencies only
 RUN pnpm install --prod --frozen-lockfile
 
-# Copy entrypoint
-COPY server/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
-
 # Expose server port
 EXPOSE 8080
 

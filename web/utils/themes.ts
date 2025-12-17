@@ -96,4 +96,36 @@ export const themePresets: ThemePreset[] = [
       },
     },
   },
+  {
+    title: 'Supabase',
+    code: 'theme-supabase',
+    colors: {
+      light: {
+        primary: 'oklch(0.8348 0.1302 160.9080)',
+        secondary: 'oklch(0.9940 0 0)',
+        accent: 'oklch(0.9461 0 0)',
+      },
+      dark: {
+        primary: 'oklch(0.4365 0.1044 156.7556)',
+        secondary: 'oklch(0.2603 0 0)',
+        accent: 'oklch(0.3132 0 0)',
+      },
+    },
+  },
+  {
+    title: 'Sunset Horizon',
+    code: 'theme-sunset-horizon',
+    colors: {
+      light: {
+        primary: 'oklch(0.7357 0.1641 34.7091)',
+        secondary: 'oklch(0.9596 0.0200 28.9029)',
+        accent: 'oklch(0.8278 0.1131 57.9984)',
+      },
+      dark: {
+        primary: 'oklch(0.7357 0.1641 34.7091)',
+        secondary: 'oklch(0.3637 0.0203 342.2664)',
+        accent: 'oklch(0.8278 0.1131 57.9984)',
+      },
+    },
+  },
 ];

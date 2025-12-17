@@ -100,7 +100,7 @@ export default function LoginPage() {
     <Card>
       <CardContent className="flex w-sm max-w-full flex-col items-center gap-4">
         <span className={cn('text-2xl font-bold')}>L O G I N</span>
-        {otpSent ? (
+        {/* {otpSent ? (
           <>
             <span className="font-light">
               Verify OTP sent to <b className="font-bold underline">{email}</b>
@@ -175,7 +175,8 @@ export default function LoginPage() {
             <Separator />
             <GoogleButton className="w-full" />
           </>
-        )}
+        )} */}
+        <GoogleButton className="w-full" />
       </CardContent>
 
       {/* Error Alert Dialog */}

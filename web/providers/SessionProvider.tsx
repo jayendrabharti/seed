@@ -53,6 +53,8 @@ export default function SessionProvider({ children }: { children: ReactNode }) {
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
+  const trpcUtils = clientTrpc.useUtils();
+
   const status: SessionContextType['status'] = useMemo(() => {
     if (isLoading) return 'loading';
     return user ? 'authenticated' : 'unauthenticated';
@@ -65,15 +67,14 @@ export default function SessionProvider({ children }: { children: ReactNode }) {
       try {
         await logoutMutation.mutateAsync();
         toast.success('Signed out successfully');
-        await refetch();
+        // await refetch();
+        await trpcUtils.auth.getUser.reset();
+
         if (redirect) {
           router.push('/login');
         }
       } catch (error) {
         toast.error('Error signing out');
-        if (redirect) {
-          router.push('/login');
-        }
       }
     },
     [logoutMutation, refetch, router],

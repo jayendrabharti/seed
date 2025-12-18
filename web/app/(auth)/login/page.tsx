@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { LoaderCircleIcon, LogInIcon, SendIcon } from 'lucide-react';
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { toast } from 'sonner';
 import {
   InputOTP,
@@ -19,6 +19,8 @@ import { useSession } from '@/providers/SessionProvider';
 import Countdown, { CountdownRendererFn } from 'react-countdown';
 import { ErrorAlertDialog } from '@/components/ui/error-alert-dialog';
 import { clientTrpc } from '@seed/api/client';
+
+const LOGIN_STATE_KEY = 'login-otp-state';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -35,10 +37,41 @@ export default function LoginPage() {
     errorCode?: string;
   } | null>(null);
 
+  // Load persisted login state on mount
+  useEffect(() => {
+    const savedState = sessionStorage.getItem(LOGIN_STATE_KEY);
+    if (savedState) {
+      try {
+        const { email: savedEmail, otpExpiresAt: savedExpiry } =
+          JSON.parse(savedState);
+        const expiryDate = new Date(savedExpiry);
+
+        // Only restore if OTP hasn't expired
+        if (expiryDate > new Date()) {
+          setEmail(savedEmail);
+          setOtpExpiresAt(expiryDate);
+          setOtpSent(true);
+        } else {
+          // Clear expired state
+          sessionStorage.removeItem(LOGIN_STATE_KEY);
+        }
+      } catch (error) {
+        sessionStorage.removeItem(LOGIN_STATE_KEY);
+      }
+    }
+  }, []);
+
   const emailLoginMutation = clientTrpc.auth.emailLogin.useMutation({
     onSuccess: ({ otpExpiresAt, message }) => {
       setOtpSent(true);
       setOtpExpiresAt(otpExpiresAt);
+
+      // Persist state to sessionStorage
+      sessionStorage.setItem(
+        LOGIN_STATE_KEY,
+        JSON.stringify({ email, otpExpiresAt }),
+      );
+
       toast.success(message);
     },
     onError: (error) => {
@@ -48,8 +81,12 @@ export default function LoginPage() {
   const emailVerifyMutation = clientTrpc.auth.emailVerify.useMutation({
     onSuccess: (data) => {
       toast.success(data.message);
+
+      // Clear persisted state on successful verification
+      sessionStorage.removeItem(LOGIN_STATE_KEY);
+
       refreshSession();
-      router.push(redirect || '/');
+      router.push(redirect || '/dashboard');
     },
     onError: (error) => {
       toast.error(error.message);
@@ -93,6 +130,10 @@ export default function LoginPage() {
     setOtpSent(false);
     setOtp('');
     setOtpExpiresAt(null);
+
+    // Clear persisted state when OTP expires
+    sessionStorage.removeItem(LOGIN_STATE_KEY);
+
     toast.error('OTP has expired', { description: 'Try logging in again' });
   };
 
@@ -100,7 +141,7 @@ export default function LoginPage() {
     <Card>
       <CardContent className="flex w-sm max-w-full flex-col items-center gap-4">
         <span className={cn('text-2xl font-bold')}>L O G I N</span>
-        {/* {otpSent ? (
+        {otpSent ? (
           <>
             <span className="font-light">
               Verify OTP sent to <b className="font-bold underline">{email}</b>
@@ -175,8 +216,7 @@ export default function LoginPage() {
             <Separator />
             <GoogleButton className="w-full" />
           </>
-        )} */}
-        <GoogleButton className="w-full" />
+        )}
       </CardContent>
 
       {/* Error Alert Dialog */}

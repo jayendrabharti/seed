@@ -47,9 +47,15 @@ const envSchema = z.object({
   GOOGLE_CLIENT_ID: z.string().min(1, 'GOOGLE_CLIENT_ID is required'),
   GOOGLE_CLIENT_SECRET: z.string().min(1, 'GOOGLE_CLIENT_SECRET is required'),
 
-  // Email
-  GMAIL_USER: z.email('GMAIL_USER must be a valid email'),
-  GMAIL_PASS: z.string().min(1, 'GMAIL_PASS is required'),
+  // Email Configuration
+  SMTP_USERNAME: z.string().min(1, 'SMTP_USERNAME is required'),
+  SMTP_PASSWORD: z.string().min(1, 'SMTP_PASSWORD is required'),
+  SMTP_PORT: z
+    .string()
+    .regex(/^\d+$/, 'SMTP_PORT must be a valid number')
+    .default('587'),
+  SMTP_HOST: z.string().min(1, 'SMTP_HOST is required'),
+  SMTP_MAIL: z.email('SMTP_MAIL must be a valid email'),
 
   // Optional Test Configuration
   TEST_MAIL: z.email('TEST_MAIL must be a valid email').optional(),

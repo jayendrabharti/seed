@@ -4,6 +4,7 @@ import cors from 'cors';
 import { trpcExpress } from './routers';
 import cookieParser from 'cookie-parser';
 import { validateENV } from './helpers/validateENV';
+import otpEmailTemplate from './helpers/otpEmailTemplate';
 export * from './routers';
 
 dotenv.config();
@@ -30,6 +31,16 @@ app.get('/', (_req, res) => res.send('This is your server.'));
 app.get('/health', (_req, res) =>
   res.json({ message: 'OK', timestamp: Date.now() }),
 );
+
+app.get('/otp-email-template', (_req, res) => {
+  return res.send(
+    otpEmailTemplate({
+      otp: '123456',
+      to: 'test@example.com',
+      exp: new Date(),
+    }),
+  );
+});
 
 app.use('/api', trpcExpress);
 

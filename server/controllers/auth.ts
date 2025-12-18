@@ -9,6 +9,7 @@ import {
   refreshSecret,
   refreshTokenCookieOptions,
   testUser,
+  isProduction,
 } from '../helpers/auth';
 import { oAuth2Client } from '../helpers/googleClient';
 import axios from 'axios';
@@ -21,6 +22,7 @@ import {
   revokeAllUserTokens,
 } from '../helpers/tokenManagement';
 import { RefreshTokenPayload } from '../types/auth';
+import otpEmailTemplate from '../helpers/otpEmailTemplate';
 
 export const getUser = protectedProcedure.query(async ({ ctx }) => {
   const user = await prisma.user.findUnique({
@@ -90,7 +92,7 @@ export const emailLogin = publicProcedure
     });
 
     let otp;
-    if (testUser && testUser.email === email) {
+    if (!isProduction && testUser && testUser.email === email) {
       otp = testUser.otp;
     } else {
       otp = crypto.randomInt(100000, 1000000).toString(); // 6-digit OTP
@@ -109,8 +111,8 @@ export const emailLogin = publicProcedure
     if (!(testUser && testUser.email === email)) {
       await sendMail({
         to: email,
-        subject: 'Your OTP Code',
-        content: `Your OTP code is ${otp}. It is valid for 5 minutes.`,
+        subject: 'Verify your email for SEED',
+        content: otpEmailTemplate({ otp, to: email, exp: expiresAt }),
       });
     }
 

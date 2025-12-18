@@ -40,7 +40,7 @@ export const accessTokenExpiry = process.env.ACCESS_TOKEN_EXPIRY ?? '15m';
 export const refreshTokenExpiry = process.env.REFRESH_TOKEN_EXPIRY ?? '7d';
 
 // --- Environment ---
-const isProduction = process.env.NODE_ENV === 'production';
+export const isProduction = process.env.NODE_ENV === 'production';
 
 // --- Cookie Configurations ---
 export const accessTokenCookieOptions: CookieOptions = {

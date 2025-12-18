@@ -4,5 +4,5 @@ dist
 .next
 .env
 
-
-.nx/cache
+*.md
+!README.md

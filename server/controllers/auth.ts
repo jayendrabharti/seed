@@ -22,7 +22,8 @@ import {
   revokeAllUserTokens,
 } from '../helpers/tokenManagement';
 import { RefreshTokenPayload } from '../types/auth';
-import otpEmailTemplate from '../helpers/otpEmailTemplate';
+import otpEmailTemplate from '../helpers/email-templates/otpEmailTemplate';
+import { sendWelcomeEmail } from '../helpers/email-templates/welcomeEmailTemplate';
 
 export const getUser = protectedProcedure.query(async ({ ctx }) => {
   const user = await prisma.user.findUnique({
@@ -52,12 +53,14 @@ export const emailLogin = publicProcedure
   .mutation(async ({ input: { email } }) => {
     let user = await prisma.user.findUnique({ where: { email } });
 
-    if (!user)
+    if (!user) {
       user = await prisma.user.create({
         data: {
           email,
         },
       });
+      sendWelcomeEmail(email);
+    }
 
     if (!user)
       throw new TRPCError({
@@ -248,6 +251,7 @@ export const googleAuthCallback = publicProcedure
       user = await prisma.user.create({
         data: { email, name, picture },
       });
+      sendWelcomeEmail(email);
     }
 
     // 🔐 sets httpOnly cookies

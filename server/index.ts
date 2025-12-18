@@ -4,7 +4,8 @@ import cors from 'cors';
 import { trpcExpress } from './routers';
 import cookieParser from 'cookie-parser';
 import { validateENV } from './helpers/validateENV';
-import otpEmailTemplate from './helpers/otpEmailTemplate';
+import otpEmailTemplate from './helpers/email-templates/otpEmailTemplate';
+import welcomeEmailTemplate from './helpers/email-templates/welcomeEmailTemplate';
 export * from './routers';
 
 dotenv.config();
@@ -32,14 +33,26 @@ app.get('/health', (_req, res) =>
   res.json({ message: 'OK', timestamp: Date.now() }),
 );
 
-app.get('/otp-email-template', (_req, res) => {
-  return res.send(
-    otpEmailTemplate({
-      otp: '123456',
-      to: 'test@example.com',
-      exp: new Date(),
-    }),
-  );
+app.get('/email-template', (req, res) => {
+  const { type } = req.query;
+
+  if (type === 'welcome') {
+    return res.send(
+      welcomeEmailTemplate({
+        to: 'test@example.com',
+      }),
+    );
+  } else if (type === 'otp') {
+    return res.send(
+      otpEmailTemplate({
+        otp: '123456',
+        to: 'test@example.com',
+        exp: new Date(),
+      }),
+    );
+  } else {
+    return res.status(400).send('Invalid email template type');
+  }
 });
 
 app.use('/api', trpcExpress);

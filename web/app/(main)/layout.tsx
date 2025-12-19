@@ -2,7 +2,6 @@ import Header from '@/components/main/Header';
 import Navbar from '@/components/main/NavBar';
 import { ReactNode } from 'react';
 import { DataProvider } from '@/providers/DataProvider';
-import Main from '@/components/Main';
 import { BusinessProvider } from '@/providers/BusinessProvider';
 import AuthGuard from '@/auth/AuthGuard';
 
@@ -25,7 +24,7 @@ export default async function MainLayout({
 }) {
   return (
     <AuthGuard>
-      <Main className="bg-background text-foreground grid h-dvh min-h-dvh w-full grid-rows-[auto_1fr]">
+      <main className="bg-background text-foreground grid h-dvh min-h-dvh w-full grid-rows-[auto_1fr]">
         <DataProvider>
           <BusinessProvider>
             <div className="flex min-h-screen flex-row">
@@ -44,7 +43,7 @@ export default async function MainLayout({
             </div>
           </BusinessProvider>
         </DataProvider>
-      </Main>
+      </main>
     </AuthGuard>
   );
 }

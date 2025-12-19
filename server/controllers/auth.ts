@@ -54,8 +54,8 @@ export const getUserProfileUploadUrl = protectedProcedure
   )
   .output(
     z.object({
-      uploadUrl: z.string().url(),
-      publicUrl: z.string().url(),
+      uploadUrl: z.url(),
+      publicUrl: z.url(),
       bucket: z.string(),
       key: z.string(),
       visibility: z.enum(['PUBLIC', 'PRIVATE']),
@@ -89,7 +89,7 @@ export const getUserProfileUploadUrl = protectedProcedure
 export const setProfilePicture = protectedProcedure
   .input(
     z.object({
-      imageUrl: z.string().url(),
+      imageUrl: z.url(),
     }),
   )
   .mutation(async ({ input: { imageUrl }, ctx: { userId } }) => {

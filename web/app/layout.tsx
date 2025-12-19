@@ -6,6 +6,7 @@ import SessionProvider from '@/providers/SessionProvider';
 import { ThemeProvider } from '@/providers/ThemeProvider';
 import { TRPCProvider } from '@/providers/TRPCProvider';
 import { cn } from '@/lib/utils';
+import ScrollToTop from '@/components/ScrollToTop';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -32,7 +33,7 @@ export default function RootLayout({
       <body
         className={cn(
           `${geistSans.variable} ${geistMono.variable} bg-background antialiased`,
-          'h-dvh w-full',
+          'min-h-dvh w-full',
         )}
       >
         <ThemeProvider>
@@ -40,6 +41,7 @@ export default function RootLayout({
             <SessionProvider>
               {children}
               <Toaster richColors />
+              <ScrollToTop />
             </SessionProvider>
           </TRPCProvider>
         </ThemeProvider>

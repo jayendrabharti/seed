@@ -13,6 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import Reveal from '../animations/Reveal';
 
 export function Features() {
   const features = [
@@ -57,33 +58,37 @@ export function Features() {
   return (
     <section id="features" className="py-24 sm:py-32">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mx-auto mb-16 max-w-3xl text-center">
-          <h2 className="mb-4 text-3xl font-bold tracking-tight text-balance sm:text-4xl lg:text-5xl">
-            Everything you need to manage your business
-          </h2>
-          <p className="text-muted-foreground text-lg text-balance">
-            SEED brings together all your business operations into one seamless
-            platform. No more juggling multiple tools.
-          </p>
-        </div>
+        <Reveal type="bottomUp">
+          <div className="mx-auto mb-16 max-w-3xl text-center">
+            <h2 className="mb-4 text-3xl font-bold tracking-tight text-balance sm:text-4xl lg:text-5xl">
+              Everything you need to manage your business
+            </h2>
+            <p className="text-muted-foreground text-lg text-balance">
+              SEED brings together all your business operations into one
+              seamless platform. No more juggling multiple tools.
+            </p>
+          </div>
+        </Reveal>
 
         <div className="mx-auto grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {features.map((feature) => {
+          {features.map((feature, index) => {
             const Icon = feature.icon;
             return (
-              <Card key={feature.title} className="border-2">
-                <CardHeader>
-                  <div className="bg-primary/10 mb-4 flex h-12 w-12 items-center justify-center rounded-lg">
-                    <Icon className="text-primary h-6 w-6" />
-                  </div>
-                  <CardTitle className="text-xl">{feature.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription className="text-base leading-relaxed">
-                    {feature.description}
-                  </CardDescription>
-                </CardContent>
-              </Card>
+              <Reveal key={feature.title} type="bottomUp" delay={index * 0.1}>
+                <Card className="h-full border-2">
+                  <CardHeader>
+                    <div className="bg-primary/10 mb-4 flex h-12 w-12 items-center justify-center rounded-lg">
+                      <Icon className="text-primary h-6 w-6" />
+                    </div>
+                    <CardTitle className="text-xl">{feature.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription className="text-base leading-relaxed">
+                      {feature.description}
+                    </CardDescription>
+                  </CardContent>
+                </Card>
+              </Reveal>
             );
           })}
         </div>

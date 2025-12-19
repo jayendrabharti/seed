@@ -20,6 +20,7 @@ import {
   UserIcon,
 } from 'lucide-react';
 import Link from 'next/link';
+import UserAvatar from '@/components/profile/UserAvatar';
 
 export default function AccountPage() {
   const { user, status, logOut } = useSession();
@@ -97,13 +98,7 @@ export default function AccountPage() {
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex items-center gap-4">
-            <Avatar className="h-20 w-20">
-              <AvatarImage
-                src={user.picture || undefined}
-                alt={user.name || 'User'}
-              />
-              <AvatarFallback className="text-lg">{initials}</AvatarFallback>
-            </Avatar>
+            <UserAvatar />
             <div className="flex-1">
               <h2 className="text-2xl font-semibold">
                 {user.name || 'No name set'}

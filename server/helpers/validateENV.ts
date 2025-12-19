@@ -57,6 +57,12 @@ const envSchema = z.object({
   SMTP_HOST: z.string().min(1, 'SMTP_HOST is required'),
   SMTP_MAIL: z.email('SMTP_MAIL must be a valid email'),
 
+  // AWS S3 Configuration
+  AWS_REGION: z.string().min(1, 'AWS_REGION is required'),
+  AWS_ACCESS_KEY_ID: z.string().min(1, 'AWS_ACCESS_KEY_ID is required'),
+  AWS_SECRET_ACCESS_KEY: z.string().min(1, 'AWS_SECRET_ACCESS_KEY is required'),
+  AWS_S3_BUCKET_NAME: z.string().min(1, 'AWS_S3_BUCKET_NAME is required'),
+
   // Optional Test Configuration
   TEST_MAIL: z.email('TEST_MAIL must be a valid email').optional(),
   TEST_OTP: z

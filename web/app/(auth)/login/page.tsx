@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { LoaderCircleIcon, LogInIcon, SendIcon } from 'lucide-react';
-import { useState, useTransition, useEffect } from 'react';
+import { useState, useTransition } from 'react';
 import { toast } from 'sonner';
 import {
   InputOTP,
@@ -22,44 +22,55 @@ import { clientTrpc } from '@seed/api/client';
 
 const LOGIN_STATE_KEY = 'login-otp-state';
 
+// Helper function to load persisted login state
+const loadPersistedLoginState = () => {
+  const savedState = sessionStorage.getItem(LOGIN_STATE_KEY);
+  if (savedState) {
+    try {
+      const { email: savedEmail, otpExpiresAt: savedExpiry } =
+        JSON.parse(savedState);
+      const expiryDate = new Date(savedExpiry);
+
+      // Only restore if OTP hasn't expired
+      if (expiryDate > new Date()) {
+        return {
+          email: savedEmail,
+          otpExpiresAt: expiryDate,
+          otpSent: true,
+        };
+      } else {
+        // Clear expired state
+        sessionStorage.removeItem(LOGIN_STATE_KEY);
+      }
+    } catch (error) {
+      sessionStorage.removeItem(LOGIN_STATE_KEY);
+    }
+  }
+  return { email: '', otpExpiresAt: null, otpSent: false };
+};
+
 export default function LoginPage() {
   const router = useRouter();
   const redirect = useSearchParams().get('redirect');
   const { refreshSession } = useSession();
-  const [email, setEmail] = useState<string>('');
+
+  // Initialize state with persisted values to avoid setState in effect
+  const [email, setEmail] = useState<string>(
+    () => loadPersistedLoginState().email,
+  );
   const [otp, setOtp] = useState<string>('');
-  const [otpExpiresAt, setOtpExpiresAt] = useState<Date | null>(null);
-  const [otpSent, setOtpSent] = useState<boolean>(false);
+  const [otpExpiresAt, setOtpExpiresAt] = useState<Date | null>(
+    () => loadPersistedLoginState().otpExpiresAt,
+  );
+  const [otpSent, setOtpSent] = useState<boolean>(
+    () => loadPersistedLoginState().otpSent,
+  );
   const [sendingOtp, startSendingOtp] = useTransition();
   const [verifyingOtp, startVerifyingOtp] = useTransition();
   const [errorDialog, setErrorDialog] = useState<{
     message: string;
     errorCode?: string;
   } | null>(null);
-
-  // Load persisted login state on mount
-  useEffect(() => {
-    const savedState = sessionStorage.getItem(LOGIN_STATE_KEY);
-    if (savedState) {
-      try {
-        const { email: savedEmail, otpExpiresAt: savedExpiry } =
-          JSON.parse(savedState);
-        const expiryDate = new Date(savedExpiry);
-
-        // Only restore if OTP hasn't expired
-        if (expiryDate > new Date()) {
-          setEmail(savedEmail);
-          setOtpExpiresAt(expiryDate);
-          setOtpSent(true);
-        } else {
-          // Clear expired state
-          sessionStorage.removeItem(LOGIN_STATE_KEY);
-        }
-      } catch (error) {
-        sessionStorage.removeItem(LOGIN_STATE_KEY);
-      }
-    }
-  }, []);
 
   const emailLoginMutation = clientTrpc.auth.emailLogin.useMutation({
     onSuccess: ({ otpExpiresAt, message }) => {

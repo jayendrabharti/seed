@@ -5,11 +5,13 @@ import {
   getActiveSessions,
   getNewAccessToken,
   getUser,
+  getUserProfileUploadUrl,
   googleAuthCallback,
   googleAuthUrl,
   logout,
   revokeAllSessions,
   revokeSessionById,
+  setProfilePicture,
   updateUser,
 } from '../controllers/auth';
 import { t } from '../trpc';
@@ -17,9 +19,9 @@ import { t } from '../trpc';
 export const authRoutes = t.router({
   getUser,
   updateUser,
-  logout,
 
-  getNewAccessToken,
+  getUserProfileUploadUrl,
+  setProfilePicture,
 
   emailLogin,
   emailVerify,
@@ -32,4 +34,6 @@ export const authRoutes = t.router({
   revokeSessionById,
   revokeAllSessions,
   cleanupTokens,
+  getNewAccessToken,
+  logout,
 });

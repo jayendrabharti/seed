@@ -10,16 +10,15 @@ import {
   useCallback,
 } from 'react';
 import { toast } from 'sonner';
-import { AppRouter, AppRouterOutputType } from '@seed/api/types';
 import { TRPCClientErrorLike } from '@seed/api';
 
-type User = AppRouterOutputType['auth']['getUser'];
+type User = TrpcAppRouterOutputType['auth']['getUser'];
 
 export interface SessionContextType {
   user: User | undefined;
   status: 'loading' | 'authenticated' | 'unauthenticated';
   isAuthenticated: boolean;
-  error: TRPCClientErrorLike<AppRouter> | null;
+  error: TRPCClientErrorLike<TrpcAppRouter> | null;
   refreshSession: () => Promise<void>;
   logOut: (redirect?: boolean) => Promise<void>;
 }
@@ -37,7 +36,7 @@ export default function SessionProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   const {
-    data: user,
+    data: userData,
     isLoading,
     error,
     refetch,
@@ -54,6 +53,17 @@ export default function SessionProvider({ children }: { children: ReactNode }) {
   });
 
   const trpcUtils = clientTrpc.useUtils();
+
+  const user = useMemo(() => {
+    if (!userData) return null;
+
+    return {
+      ...userData,
+      picture: userData.picture
+        ? `${userData.picture}?ua=${userData.updatedAt.getTime()}`
+        : null,
+    };
+  }, [userData]);
 
   const status: SessionContextType['status'] = useMemo(() => {
     if (isLoading) return 'loading';
@@ -77,7 +87,7 @@ export default function SessionProvider({ children }: { children: ReactNode }) {
         toast.error('Error signing out');
       }
     },
-    [logoutMutation, refetch, router],
+    [logoutMutation, router, trpcUtils.auth.getUser],
   );
 
   const refreshSession = useCallback(async () => {

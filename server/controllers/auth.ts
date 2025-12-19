@@ -24,6 +24,7 @@ import {
 import { RefreshTokenPayload } from '../types/auth';
 import otpEmailTemplate from '../helpers/email-templates/otpEmailTemplate';
 import { sendWelcomeEmail } from '../helpers/email-templates/welcomeEmailTemplate';
+import { createUploadUrl } from '../helpers/aws/s3Upload';
 
 export const getUser = protectedProcedure.query(async ({ ctx }) => {
   const user = await prisma.user.findUnique({
@@ -42,6 +43,60 @@ export const updateUser = protectedProcedure
       data: { name },
     });
     return updatedUser;
+  });
+
+export const getUserProfileUploadUrl = protectedProcedure
+  .input(
+    z.object({
+      contentType: z.string(),
+    }),
+  )
+  .output(
+    z.object({
+      uploadUrl: z.string().url(),
+      publicUrl: z.string().url(),
+      bucket: z.string(),
+      key: z.string(),
+      visibility: z.enum(['PUBLIC', 'PRIVATE']),
+    }),
+  )
+  .query(async ({ input: { contentType }, ctx: { userId } }) => {
+    const key = `profiles/${userId}-avatar.png`;
+
+    const uploadData: S3UploadUrlResponse = await createUploadUrl({
+      contentType,
+      key,
+      isPublic: true,
+    });
+
+    if (!uploadData.publicUrl) {
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to generate public URL',
+      });
+    }
+
+    return {
+      uploadUrl: uploadData.uploadUrl,
+      publicUrl: uploadData.publicUrl,
+      bucket: uploadData.bucket,
+      key: uploadData.key,
+      visibility: uploadData.visibility,
+    };
+  });
+
+export const setProfilePicture = protectedProcedure
+  .input(
+    z.object({
+      imageUrl: z.string().url(),
+    }),
+  )
+  .mutation(async ({ input: { imageUrl }, ctx: { userId } }) => {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { picture: imageUrl },
+    });
+    return { success: true };
   });
 
 export const emailLogin = publicProcedure

@@ -1,6 +1,7 @@
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { s3 } from './s3';
+import { S3File } from '../../types/s3';
 
 export async function getFileUrl({
   bucket,

@@ -25,6 +25,7 @@ import { RefreshTokenPayload } from '../types/auth';
 import otpEmailTemplate from '../helpers/email-templates/otpEmailTemplate';
 import { sendWelcomeEmail } from '../helpers/email-templates/welcomeEmailTemplate';
 import { createUploadUrl } from '../helpers/aws/s3Upload';
+import { S3UploadUrlResponse } from '../types/s3';
 
 export const getUser = protectedProcedure.query(async ({ ctx }) => {
   const user = await prisma.user.findUnique({

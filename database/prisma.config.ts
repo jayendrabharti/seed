@@ -7,9 +7,9 @@ dotenv.config({ path: '../client/.env' });
 dotenv.config({ path: '../server/.env' });
 
 export default defineConfig({
-  schema: 'prisma/schema.prisma',
+  schema: 'schema.prisma',
   migrations: {
-    path: 'prisma/migrations',
+    path: 'migrations',
   },
   datasource: {
     url:

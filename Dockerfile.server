@@ -48,7 +48,8 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY --from=builder /app/database/package.json ./database/
 COPY --from=builder /app/database/dist ./database/dist
 COPY --from=builder /app/database/generated ./database/generated
-COPY --from=builder /app/database/prisma ./database/prisma
+COPY --from=builder /app/database/schema.prisma ./database/
+COPY --from=builder /app/database/migrations ./database/migrations
 COPY --from=builder /app/database/prisma.config.ts ./database/
 
 # Copy built server package

@@ -5,7 +5,6 @@ import useLocalState from '@/hooks/useLocalState';
 import { clientTrpc } from '@seed/api/client';
 import { AppRouter, AppRouterOutputType } from '@seed/api/types';
 import { TRPCClientErrorLike } from '@seed/api';
-import { rename } from 'fs';
 import { toast } from 'sonner';
 /**
  * Business Provider - Manages multi-tenant business context
@@ -18,13 +17,14 @@ import { toast } from 'sonner';
  * - Stores current business ID in secure HTTP-only cookies
  */
 
-type Business = AppRouterOutputType['business']['getBusinesses'][number];
+export type BusinessMemberships =
+  AppRouterOutputType['business']['getBusinessesMemberships'][number];
 
 type BusinessContextType = {
-  businessId: string | null;
-  businesses: Business[] | undefined;
-  currentBusiness: Business | undefined;
-  switchBusinessId: (args: { id: string }) => Promise<void>;
+  businessMembershipId: string | null;
+  businessMemberships: BusinessMemberships[] | undefined;
+  currentBusinessMembership: BusinessMemberships | undefined;
+  switchBusinessMembershipId: (args: { id: string }) => Promise<void>;
   error: TRPCClientErrorLike<AppRouter> | null;
   refetch: () => Promise<void>;
   renameBusiness: (args: { id: string; newName: string }) => Promise<void>;
@@ -32,10 +32,10 @@ type BusinessContextType = {
 };
 
 const BusinessContext = createContext<BusinessContextType>({
-  businessId: null,
-  switchBusinessId: async () => {},
-  currentBusiness: undefined,
-  businesses: [],
+  businessMembershipId: null,
+  switchBusinessMembershipId: async () => {},
+  currentBusinessMembership: undefined,
+  businessMemberships: [],
   error: null,
   refetch: async () => {},
   renameBusiness: async () => {},
@@ -47,23 +47,23 @@ export function BusinessProvider({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [businessId, setBusinessId] = useLocalState<string | null>(
-    'businessId',
-    null,
-  );
+  const [businessMembershipId, setBusinessMembershipId] = useLocalState<
+    string | null
+  >('businessMembershipId', null);
 
   const {
-    data: businesses,
+    data: businessMemberships,
     isLoading,
     error,
     refetch,
-  } = clientTrpc.business.getBusinesses.useQuery();
+  } = clientTrpc.business.getBusinessesMemberships.useQuery();
 
   const renameMutation = clientTrpc.business.renameBusiness.useMutation();
 
   const deleteMutation = clientTrpc.business.deleteBusiness.useMutation();
 
-  const switchBusinessId = async ({ id }: { id: string }) => setBusinessId(id);
+  const switchBusinessMembershipId = async ({ id }: { id: string }) =>
+    setBusinessMembershipId(id);
 
   const handleRefetch = async () => {
     await refetch();
@@ -99,27 +99,29 @@ export function BusinessProvider({
     }
   };
 
-  const currentBusiness = useMemo(
-    () => businesses?.find((biz) => biz.id === businessId) ?? businesses?.[0],
-    [businesses, businessId],
+  const currentBusinessMembership = useMemo(
+    () =>
+      businessMemberships?.find((biz) => biz.id === businessMembershipId) ??
+      businessMemberships?.[0],
+    [businessMemberships, businessMembershipId],
   );
 
-  if (isLoading || !businesses) return <Loading />;
+  if (isLoading || !businessMemberships) return <Loading />;
 
   return (
     <BusinessContext.Provider
       value={{
-        businessId,
-        switchBusinessId,
-        businesses,
-        currentBusiness,
+        businessMembershipId,
+        switchBusinessMembershipId,
+        businessMemberships,
+        currentBusinessMembership,
         error,
         refetch: handleRefetch,
         renameBusiness,
         deleteBusiness,
       }}
     >
-      <Fragment key={businessId}>{children}</Fragment>
+      <Fragment key={businessMembershipId}>{children}</Fragment>
     </BusinessContext.Provider>
   );
 }

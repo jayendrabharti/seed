@@ -3,22 +3,34 @@ import { protectedProcedure } from '../trpc/procedures';
 import * as z from 'zod';
 import { TRPCError } from '@trpc/server';
 
-export const getBusinesses = protectedProcedure.query(
+export const getBusinessesMemberships = protectedProcedure.query(
   async ({ ctx: { userId } }) => {
-    const businesses = await prisma.business.findMany({
-      where: { ownerId: userId },
+    const businessMemberships = await prisma.businessMembership.findMany({
+      where: { userId },
+      include: { business: true },
     });
 
-    if (businesses.length > 0) return businesses;
+    if (businessMemberships.length > 0) return businessMemberships;
 
-    const newBusiness = await prisma.business.create({
-      data: {
-        name: 'My Business',
-        ownerId: userId,
-      },
+    const newBusinessMembership = await prisma.$transaction(async (tx) => {
+      const business = await tx.business.create({
+        data: {
+          name: 'My Business',
+          ownerId: userId,
+        },
+      });
+      const membership = await tx.businessMembership.create({
+        data: {
+          businessId: business.id,
+          userId: userId,
+          role: 'OWNER',
+        },
+        include: { business: true },
+      });
+      return membership;
     });
 
-    return [newBusiness];
+    return [newBusinessMembership];
   },
 );
 
@@ -40,14 +52,24 @@ export const createNewBusiness = protectedProcedure
       });
     }
 
-    const newBusiness = await prisma.business.create({
-      data: {
-        name,
-        ownerId: userId,
-      },
+    const newBusinessMembership = await prisma.$transaction(async (tx) => {
+      const business = await tx.business.create({
+        data: {
+          name,
+          ownerId: userId,
+        },
+      });
+      const membership = await tx.businessMembership.create({
+        data: {
+          businessId: business.id,
+          userId: userId,
+          role: 'OWNER',
+        },
+      });
+      return { ...membership, business };
     });
 
-    return newBusiness;
+    return newBusinessMembership;
   });
 
 export const deleteBusiness = protectedProcedure

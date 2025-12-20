@@ -17,8 +17,12 @@ import AddNewBusiness from './AddNewBusiness';
 import { useBusiness } from '@/providers/BusinessProvider';
 
 export default function BusinessSwitcher({ expanded }: { expanded: boolean }) {
-  const { businessId, switchBusinessId, businesses, currentBusiness } =
-    useBusiness();
+  const {
+    businessMembershipId,
+    switchBusinessMembershipId,
+    businessMemberships,
+    currentBusinessMembership,
+  } = useBusiness();
 
   return (
     <DropdownMenu>
@@ -31,13 +35,15 @@ export default function BusinessSwitcher({ expanded }: { expanded: boolean }) {
         >
           <Avatar className="size-10">
             <AvatarImage
-              src={currentBusiness?.logoImage || ''}
-              alt={currentBusiness?.name || ''}
+              src={currentBusinessMembership?.business.logoImage || ''}
+              alt={currentBusinessMembership?.business.name || ''}
             />
             <AvatarFallback
               className={cn('text-background bg-primary text-xs')}
             >
-              {currentBusiness?.name?.slice(0, 2).toUpperCase() || 'NA'}
+              {currentBusinessMembership?.business.name
+                ?.slice(0, 2)
+                .toUpperCase() || 'NA'}
             </AvatarFallback>
           </Avatar>
 
@@ -47,47 +53,49 @@ export default function BusinessSwitcher({ expanded }: { expanded: boolean }) {
               expanded ? 'pointer-events-auto opacity-100' : '',
             )}
           >
-            {currentBusiness?.name || 'Select Business'}
+            {currentBusinessMembership?.business.name || 'Select Business'}
           </span>
 
           <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
         </div>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-62.5">
-        {businesses?.map((business) => (
-          <DropdownMenuItem
-            key={business.id}
-            onSelect={async () => {
-              await switchBusinessId({ id: business.id });
-            }}
-            className={cn(
-              'cursor-pointer py-2',
-              businessId === business.id && 'border-muted-foreground border-2',
-            )}
-          >
-            <div className="flex w-full items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Avatar className="h-6 w-6">
-                  <AvatarImage
-                    src={business.logoImage || ''}
-                    alt={business.name}
-                  />
-                  <AvatarFallback
-                    className={cn('text-background bg-primary text-xs')}
-                  >
-                    {business.name.slice(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <span>{business.name}</span>
-              </div>
-              {businessId === business.id && (
-                <FaCheck className="ml-2 h-4 w-4" />
+      <DropdownMenuContent align="start" className="w-64">
+        <div className="flex flex-col gap-1">
+          {businessMemberships?.map((membership) => (
+            <DropdownMenuItem
+              key={membership.id}
+              onSelect={async () => {
+                await switchBusinessMembershipId({ id: membership.id });
+              }}
+              className={cn(
+                'cursor-pointer py-2',
+                businessMembershipId === membership.id &&
+                  'border-primary border-2',
               )}
-              {/* <Check className="h-4 w-4 ml-2" />} */}
-            </div>
-          </DropdownMenuItem>
-        ))}
-        <Separator className="my-2" />
+            >
+              <div className="flex w-full items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Avatar className="h-6 w-6">
+                    <AvatarImage
+                      src={membership.business.logoImage || ''}
+                      alt={membership.business.name}
+                    />
+                    <AvatarFallback
+                      className={cn('text-background bg-primary text-xs')}
+                    >
+                      {membership.business.name.slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span>{membership.business.name}</span>
+                </div>
+                {businessMembershipId === membership.id && (
+                  <FaCheck className="text-primary" />
+                )}
+              </div>
+            </DropdownMenuItem>
+          ))}
+        </div>
+        <Separator className="my-1" />
         <div className="flex flex-col space-y-1">
           <AddNewBusiness />
           <Link href={'/businesses'} className="w-full">

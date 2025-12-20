@@ -1,13 +1,13 @@
 import {
   createNewBusiness,
   deleteBusiness,
-  getBusinesses,
+  getBusinessesMemberships,
   renameBusiness,
 } from '../controllers/business';
 import { t } from '../trpc';
 
 export const businessRoutes = t.router({
-  getBusinesses,
+  getBusinessesMemberships,
   createNewBusiness,
   renameBusiness,
   deleteBusiness,

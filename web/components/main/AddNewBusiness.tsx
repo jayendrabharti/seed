@@ -22,7 +22,7 @@ export default function AddNewBusiness({
 }: {
   className?: string;
 }) {
-  const { switchBusinessId, refetch } = useBusiness();
+  const { switchBusinessMembershipId, refetch } = useBusiness();
   const [open, setOpen] = useState<boolean>(false);
   const [newBusinessName, setNewBusinessName] = useState<string>('');
   const [adding, startAdding] = useTransition();
@@ -39,15 +39,18 @@ export default function AddNewBusiness({
       }
 
       try {
-        const newBusiness = await createNewBusinessMutation.mutateAsync({
-          name: newBusinessName,
-        });
+        const newBusinessMembership =
+          await createNewBusinessMutation.mutateAsync({
+            name: newBusinessName,
+          });
 
         await refetch();
 
-        await switchBusinessId({ id: newBusiness.id });
+        await switchBusinessMembershipId({ id: newBusinessMembership.id });
 
-        toast.success(`Created Business: ${newBusiness.name}`);
+        toast.success(
+          `Created Business: ${newBusinessMembership.business.name}`,
+        );
 
         setOpen(false);
         setNewBusinessName('');

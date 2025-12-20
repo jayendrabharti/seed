@@ -1,7 +1,6 @@
 'use client';
 
-import { useBusiness } from '@/providers/BusinessProvider';
-import { Business } from '@seed/database';
+import { BusinessMemberships, useBusiness } from '@/providers/BusinessProvider';
 import { useTransition } from 'react';
 import { Button } from '../ui/button';
 import { Loader2Icon, PencilIcon, Trash2Icon } from 'lucide-react';
@@ -10,35 +9,47 @@ import { formatTimestamp } from '@/utils';
 import { Badge } from '../ui/badge';
 import DeleteDialogButton from './DeleteDialogButton';
 
-export default function BusinessCard({ business }: { business: Business }) {
-  const { currentBusiness, switchBusinessId, renameBusiness, deleteBusiness } =
-    useBusiness();
+export default function BusinessCard({
+  businessMembership,
+}: {
+  businessMembership: BusinessMemberships;
+}) {
+  const {
+    currentBusinessMembership,
+    switchBusinessMembershipId,
+    renameBusiness,
+    deleteBusiness,
+  } = useBusiness();
 
   const [upadating, startUpdating] = useTransition();
   const [switching, startSwitching] = useTransition();
 
   const deleteThisBusiness = async () => {
-    await deleteBusiness({ id: business.id });
+    await deleteBusiness({ id: businessMembership.business.id });
   };
 
   const updateThisBusiness = async () => {
     startUpdating(async () => {
-      const newName = prompt(`Enter new name for ${business.name}.`);
+      const newName = prompt(
+        `Enter new name for ${businessMembership.business.name}.`,
+      );
       if (!newName) return;
-      await renameBusiness({ id: business.id, newName });
+      await renameBusiness({ id: businessMembership.business.id, newName });
     });
   };
 
   const switchingBusiness = async () => {
     startSwitching(async () => {
-      await switchBusinessId({ id: business.id });
+      await switchBusinessMembershipId({ id: businessMembership.id });
     });
   };
 
   return (
     <div className="bg-card border-border flex flex-col rounded-lg border p-6 shadow-md transition-shadow hover:shadow-lg">
       <div className="flex w-full flex-row items-center space-x-1">
-        <span className="mb-2 text-lg font-semibold">{business.name}</span>
+        <span className="mb-2 text-lg font-semibold">
+          {businessMembership.business.name}
+        </span>
         <Button
           variant={'outline'}
           size={'icon'}
@@ -55,14 +66,14 @@ export default function BusinessCard({ business }: { business: Business }) {
       </div>
       <Separator className="my-1" />
       <span className="text-xs text-zinc-400">
-        Created: {formatTimestamp(business.createdAt)}
+        Created: {formatTimestamp(businessMembership.business.createdAt)}
       </span>
       <span className="text-xs text-zinc-400">
-        Updated: {formatTimestamp(business.updatedAt)}
+        Updated: {formatTimestamp(businessMembership.business.updatedAt)}
       </span>
       <Separator className="mt-1" />
       <div className="mt-2 flex w-full flex-row items-center justify-end">
-        {currentBusiness?.id == business.id ? (
+        {currentBusinessMembership?.id == businessMembership.id ? (
           <Badge>Current</Badge>
         ) : (
           <Button

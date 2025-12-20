@@ -13,7 +13,7 @@ import BusinessCard from '@/components/main/BusinessCard';
 import { useBusiness } from '@/providers/BusinessProvider';
 
 export default function BusinessesPage() {
-  const { businesses, error } = useBusiness();
+  const { businessMemberships, error } = useBusiness();
 
   if (error?.message) {
     return (
@@ -44,7 +44,7 @@ export default function BusinessesPage() {
   return (
     <div className="flex flex-col">
       <AddNewBusiness className="ml-auto w-max" />
-      {!businesses || businesses.length == 0 ? (
+      {!businessMemberships || businessMemberships.length == 0 ? (
         <div className="flex w-full">
           <span className="text-muted-foreground mx-auto mt-5 text-2xl">
             No businesses yet
@@ -52,8 +52,11 @@ export default function BusinessesPage() {
         </div>
       ) : (
         <div className="grid flex-1 grid-cols-1 gap-6 p-4 sm:grid-cols-2 md:grid-cols-3">
-          {businesses.map((business) => (
-            <BusinessCard key={business.id} business={business} />
+          {businessMemberships.map((businessMembership) => (
+            <BusinessCard
+              key={businessMembership.id}
+              businessMembership={businessMembership}
+            />
           ))}
         </div>
       )}

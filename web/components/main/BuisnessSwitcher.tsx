@@ -15,6 +15,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import AddNewBusiness from './AddNewBusiness';
 import { useBusiness } from '@/providers/BusinessProvider';
+import { Badge } from '../ui/badge';
 
 export default function BusinessSwitcher({ expanded }: { expanded: boolean }) {
   const {
@@ -74,8 +75,8 @@ export default function BusinessSwitcher({ expanded }: { expanded: boolean }) {
               )}
             >
               <div className="flex w-full items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Avatar className="h-6 w-6">
+                <div className="flex min-w-0 flex-1 items-center gap-2">
+                  <Avatar className="h-6 w-6 shrink-0">
                     <AvatarImage
                       src={membership.business.logoImage || ''}
                       alt={membership.business.name}
@@ -86,11 +87,12 @@ export default function BusinessSwitcher({ expanded }: { expanded: boolean }) {
                       {membership.business.name.slice(0, 2).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  <span>{membership.business.name}</span>
+                  <span className="truncate">{membership.business.name}</span>
                 </div>
                 {businessMembershipId === membership.id && (
-                  <FaCheck className="text-primary" />
+                  <FaCheck className="text-primary shrink-0" />
                 )}
+                <Badge className="ml-2">{membership.role}</Badge>
               </div>
             </DropdownMenuItem>
           ))}

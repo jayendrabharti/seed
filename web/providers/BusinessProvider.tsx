@@ -47,7 +47,7 @@ export function BusinessProvider({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [businessMembershipId, setBusinessMembershipId] = useLocalState<
+  const [localBusinessMembershipId, setBusinessMembershipId] = useLocalState<
     string | null
   >('businessMembershipId', null);
 
@@ -57,6 +57,13 @@ export function BusinessProvider({
     error,
     refetch,
   } = clientTrpc.business.getBusinessesMemberships.useQuery();
+
+  const businessMembershipId = useMemo(() => {
+    if (localBusinessMembershipId) {
+      return localBusinessMembershipId;
+    }
+    return businessMemberships?.[0]?.id ?? null;
+  }, [localBusinessMembershipId, businessMemberships]);
 
   const renameMutation = clientTrpc.business.renameBusiness.useMutation();
 

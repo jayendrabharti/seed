@@ -11,6 +11,9 @@ import Link from 'next/link';
 import AddNewBusiness from '@/components/main/AddNewBusiness';
 import BusinessCard from '@/components/main/BusinessCard';
 import { useBusiness } from '@/providers/BusinessProvider';
+import PageTitle from '@/components/main/PageTitle';
+import { PlusIcon } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
 
 export default function BusinessesPage() {
   const { businessMemberships, error } = useBusiness();
@@ -42,8 +45,12 @@ export default function BusinessesPage() {
   }
 
   return (
-    <div className="flex flex-col">
-      <AddNewBusiness className="ml-auto w-max" />
+    <>
+      <div className="flex flex-row items-center justify-between px-3">
+        <PageTitle />
+        <AddNewBusiness className="ml-auto w-max" />
+      </div>
+      <Separator />
       {!businessMemberships || businessMemberships.length == 0 ? (
         <div className="flex w-full">
           <span className="text-muted-foreground mx-auto mt-5 text-2xl">
@@ -60,6 +67,6 @@ export default function BusinessesPage() {
           ))}
         </div>
       )}
-    </div>
+    </>
   );
 }

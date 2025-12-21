@@ -12,6 +12,7 @@ import { Fragment } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '../ui/button';
+import { getTitleFromSlug } from '@/utils';
 
 export default function BreadCrumb() {
   const pathname = usePathname();
@@ -36,16 +37,10 @@ export default function BreadCrumb() {
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
                   {isLast ? (
-                    <BreadcrumbPage>
-                      {segment
-                        .replace(/_/g, ' ')
-                        .replace(/^./, (c) => c.toUpperCase())}
-                    </BreadcrumbPage>
+                    <BreadcrumbPage>{getTitleFromSlug(segment)}</BreadcrumbPage>
                   ) : (
                     <BreadcrumbLink href={href}>
-                      {segment
-                        .replace(/_/g, ' ')
-                        .replace(/^./, (c) => c.toUpperCase())}
+                      {getTitleFromSlug(segment)}
                     </BreadcrumbLink>
                   )}
                 </BreadcrumbItem>

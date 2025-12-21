@@ -21,3 +21,13 @@ export const formatTimestamp = (
   // Format 1: Full timestamp (e.g., "15 January 2024 • 2:30 pm")
   return `${day} ${month.slice(0, 3)} ${year} • ${hours}:${minutes} ${ampm}`;
 };
+
+export const getTitleFromSlug = (slug: string) => {
+  const segments = slug.split('/').filter(Boolean);
+  if (segments.length === 0) return 'Home';
+  const lastSegment = segments[segments.length - 1];
+  return lastSegment
+    .replace(/-/g, ' ')
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+};

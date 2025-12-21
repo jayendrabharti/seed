@@ -62,7 +62,7 @@ model otp {
 // -----------------------------------------------------
 
 model Business {
-  id          String   @id @default(cuid())
+  id          String  @id @default(cuid())
   name        String
   ownerId     String
   description String?
@@ -70,11 +70,14 @@ model Business {
   phone       String?
   logoImage   String?
   website     String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
 
-  owner   User                 @relation("BusinessOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  members BusinessMembership[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner      User                 @relation("BusinessOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members    BusinessMembership[]
+  products   Product[]
+  categories Category[]
 
   @@unique([ownerId, name])
   @@map("businesses")
@@ -99,4 +102,79 @@ model BusinessMembership {
 enum BusinessMembershipType {
   OWNER
   STAFF
+}
+
+// -----------------------------------------------------
+// PRODUCT MANAGEMENT
+// -----------------------------------------------------
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String
+  businessId  String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  products Product[]
+
+  @@unique([businessId, name])
+  @@index([name])
+  @@map("categories")
+}
+
+model Product {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+
+  // Identification
+  sku     String  @unique
+  barcode String? @unique
+
+  // Product Specifications
+  brand      String?
+  model      String?
+  color      String?
+  size       String?
+  weight     Decimal?
+  dimensions String?
+
+  // Media
+  image       String?
+  attachments String[]
+
+  // Units
+  unit           String   @default("pcs")
+  secondaryUnit  String?
+  unitConvertion Decimal?
+
+  // Inventory & Pricing
+  currentStockLevel Decimal  @default(0)
+  minStockLevel     Decimal?
+  maxStockLevel     Decimal?
+  reorderLevel      Decimal?
+  costPrice         Decimal
+  sellingPrice      Decimal
+  mrp               Decimal?
+  taxRate           Decimal
+  discountRate      Decimal
+
+  // Flags & Timestamps  
+  isActive      Boolean  @default(true)
+  isService     Boolean  @default(false)
+  allowNegative Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id])
+
+  @@index([businessId, name])
+  @@map("products")
 }

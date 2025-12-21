@@ -36,7 +36,7 @@ export default async function MainLayout({
                 <Header />
 
                 {/* Main content area with scrolling */}
-                <div className="w-full flex-1 overflow-y-scroll p-3">
+                <div className="w-full flex-1 overflow-y-scroll">
                   {children}
                 </div>
               </div>

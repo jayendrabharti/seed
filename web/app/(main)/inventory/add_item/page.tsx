@@ -1,4 +1,4 @@
-import AddProductForm from '@/components/main/inventory/AddProductForm';
+import AddProductForm from '@/components/inventory/AddProductForm';
 import PageTitle from '@/components/main/PageTitle';
 import { Separator } from '@/components/ui/separator';
 

@@ -20,6 +20,30 @@ export const addProduct = protectedProcedure
     }
   });
 
+export const getProductCount = protectedProcedure
+  .input(
+    z.object({
+      businessId: z.string(),
+      isActive: z.boolean().optional().default(true),
+    }),
+  )
+  .query(async ({ input }) => {
+    try {
+      const count = await prisma.product.count({
+        where: {
+          businessId: input.businessId,
+          isActive: input.isActive,
+        },
+      });
+      return count;
+    } catch (error) {
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to get product count',
+      });
+    }
+  });
+
 export const getProducts = protectedProcedure
   .input(
     z.object({

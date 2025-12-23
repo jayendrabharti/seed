@@ -64,7 +64,7 @@ export default function ProductDetailSheet({
           <SheetDescription>Product Details</SheetDescription>
         </SheetHeader>
 
-        <div className="mt-6 space-y-6">
+        <div className="mt-6 space-y-6 p-3">
           {/* Status and Actions */}
           <div className="flex items-center justify-between">
             <div className="flex gap-2">

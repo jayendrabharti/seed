@@ -21,6 +21,7 @@ export type BusinessMemberships =
   AppRouterOutputType['business']['getBusinessesMemberships'][number];
 
 type BusinessContextType = {
+  activeBusiness: BusinessMemberships['business'] | undefined;
   businessMembershipId: string | null;
   businessMemberships: BusinessMemberships[] | undefined;
   currentBusinessMembership: BusinessMemberships | undefined;
@@ -33,6 +34,7 @@ type BusinessContextType = {
 
 const BusinessContext = createContext<BusinessContextType>({
   businessMembershipId: null,
+  activeBusiness: undefined,
   switchBusinessMembershipId: async () => {},
   currentBusinessMembership: undefined,
   businessMemberships: [],
@@ -116,11 +118,17 @@ export function BusinessProvider({
     [businessMemberships, businessMembershipId],
   );
 
+  const activeBusiness = useMemo(
+    () => currentBusinessMembership?.business,
+    [currentBusinessMembership],
+  );
+
   if (isLoading || !businessMemberships) return <Loading />;
 
   return (
     <BusinessContext.Provider
       value={{
+        activeBusiness,
         businessMembershipId,
         switchBusinessMembershipId,
         businessMemberships,

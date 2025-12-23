@@ -4,6 +4,7 @@ import { ReactNode } from 'react';
 import { DataProvider } from '@/providers/DataProvider';
 import { BusinessProvider } from '@/providers/BusinessProvider';
 import AuthGuard from '@/auth/AuthGuard';
+import { CategoriesProvider } from '@/providers/CategoriesProvider';
 
 /**
  * Main Application Layout
@@ -27,19 +28,23 @@ export default async function MainLayout({
       <main className="bg-background text-foreground min-h-screen w-full">
         <DataProvider>
           <BusinessProvider>
-            <div className="flex min-h-screen w-full">
-              {/* Sidebar: fixed width, always visible, no overlap */}
-              <div className="sticky top-0 z-30 h-screen shrink-0">
-                <Navbar />
-              </div>
-              {/* Main content: flex column, header sticky, content scrollable */}
-              <div className="flex min-w-0 flex-1 flex-col">
-                <div className="bg-background sticky top-0 z-20">
-                  <Header />
+            <CategoriesProvider>
+              <div className="flex min-h-screen w-full">
+                {/* Sidebar: fixed width, always visible, no overlap */}
+                <div className="sticky top-0 z-30 h-screen shrink-0">
+                  <Navbar />
                 </div>
-                <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
+                {/* Main content: flex column, header sticky, content scrollable */}
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <div className="bg-background sticky top-0 z-20">
+                    <Header />
+                  </div>
+                  <div className="min-h-0 flex-1 overflow-y-auto">
+                    {children}
+                  </div>
+                </div>
               </div>
-            </div>
+            </CategoriesProvider>
           </BusinessProvider>
         </DataProvider>
       </main>

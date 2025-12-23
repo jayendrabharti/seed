@@ -1,3 +1,4 @@
+import AddProductForm from '@/components/main/inventory/AddProductForm';
 import PageTitle from '@/components/main/PageTitle';
 import { Separator } from '@/components/ui/separator';
 
@@ -8,6 +9,7 @@ export default function AddItemPage() {
         <PageTitle />
       </div>
       <Separator />
+      <AddProductForm />
     </>
   );
 }

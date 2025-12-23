@@ -1,22 +1,11 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
 import { Toaster } from '@/components/ui/sonner';
 import SessionProvider from '@/providers/SessionProvider';
 import { ThemeProvider } from '@/providers/ThemeProvider';
 import { TRPCProvider } from '@/providers/TRPCProvider';
 import { cn } from '@/lib/utils';
 import ScrollToTop from '@/components/ScrollToTop';
-
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-});
-
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
-});
 
 export const metadata: Metadata = {
   title: 'SEED',
@@ -29,13 +18,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body
-        className={cn(
-          `${geistSans.variable} ${geistMono.variable} bg-background antialiased`,
-          'min-h-dvh w-full',
-        )}
-      >
+    <html lang="en" suppressHydrationWarning className="scroll-smooth">
+      <body className={cn(`bg-background antialiased`, 'min-h-screen w-full')}>
         <ThemeProvider>
           <TRPCProvider>
             <SessionProvider>

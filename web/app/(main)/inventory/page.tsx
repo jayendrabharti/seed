@@ -1,4 +1,5 @@
 import PageTitle from '@/components/main/PageTitle';
+import ProductsTable from '@/components/main/inventory/ProductsTable';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { PlusIcon } from 'lucide-react';
@@ -17,6 +18,7 @@ export default function InventoryPage() {
         </Link>
       </div>
       <Separator />
+      <ProductsTable />
     </>
   );
 }

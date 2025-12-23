@@ -6,12 +6,14 @@ import { t } from '../trpc';
 import { businessRoutes } from './business';
 import { inventoryRoutes } from './inventory';
 import { categoryRoutes } from './category';
+import { s3Routes } from './s3';
 
 export const appRouter = t.router({
   auth: authRoutes,
   business: businessRoutes,
   inventory: inventoryRoutes,
   category: categoryRoutes,
+  s3: s3Routes,
 });
 
 export const trpcExpress = createExpressMiddleware({

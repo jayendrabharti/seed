@@ -59,7 +59,10 @@ export function BusinessProvider({
   } = clientTrpc.business.getBusinessesMemberships.useQuery();
 
   const businessMembershipId = useMemo(() => {
-    if (localBusinessMembershipId) {
+    if (
+      localBusinessMembershipId &&
+      businessMemberships?.some((biz) => biz.id === localBusinessMembershipId)
+    ) {
       return localBusinessMembershipId;
     }
     return businessMemberships?.[0]?.id ?? null;

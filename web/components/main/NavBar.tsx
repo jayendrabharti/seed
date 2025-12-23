@@ -70,7 +70,7 @@ export default function Navbar() {
   return (
     <nav
       className={cn(
-        `group navbar bg-sidebar z-10 row-start-2 row-end-3 flex max-h-screen w-19 flex-col overflow-hidden border-r p-2.5 backdrop-blur-lg transition-all duration-300 ease-in-out hover:w-60`,
+        `group navbar bg-sidebar z-10 row-start-2 row-end-3 flex h-full max-h-screen w-19 flex-col overflow-hidden border-r p-2.5 backdrop-blur-lg transition-all duration-300 ease-in-out hover:w-60`,
         expanded ? 'w-60' : '',
       )}
     >

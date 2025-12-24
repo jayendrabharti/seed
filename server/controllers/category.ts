@@ -2,7 +2,7 @@ import { prisma } from '@seed/database';
 import { protectedProcedure } from '../trpc/procedures';
 import * as z from 'zod';
 import { TRPCError } from '@trpc/server';
-import { handlePrismaError } from '../helpers/handlePrismaError';
+import { handleControllerError } from '../helpers/controllerErrorHandler';
 
 export const getCategoriesByBusinessId = protectedProcedure
   .input(
@@ -10,7 +10,7 @@ export const getCategoriesByBusinessId = protectedProcedure
       businessId: z.string(),
     }),
   )
-  .query(async ({ input }) => {
+  .query(async ({ input, ctx }) => {
     try {
       const categories = await prisma.category.findMany({
         where: {
@@ -24,10 +24,9 @@ export const getCategoriesByBusinessId = protectedProcedure
       });
       return categories;
     } catch (error: unknown) {
-      const { code, message } = handlePrismaError(error);
-      throw new TRPCError({
-        code,
-        message: message ?? 'Failed to fetch categories',
+      handleControllerError(error, {
+        operation: 'fetch categories',
+        userId: ctx.userId,
       });
     }
   });
@@ -40,19 +39,17 @@ export const createCategory = protectedProcedure
       description: z.string().max(255).optional(),
     }),
   )
-  .mutation(async ({ input }) => {
+  .mutation(async ({ input, ctx }) => {
     try {
       const newCategory = await prisma.category.create({
         data: input,
       });
       return newCategory;
     } catch (error: unknown) {
-      const { code, message, isDuplicateError } = handlePrismaError(error);
-      throw new TRPCError({
-        code,
-        message: isDuplicateError
-          ? 'This Category name is already taken'
-          : message,
+      handleControllerError(error, {
+        operation: 'create category',
+        fallbackMessage: 'This category name may already be in use',
+        userId: ctx.userId,
       });
     }
   });
@@ -64,7 +61,7 @@ export const deleteCategory = protectedProcedure
       businessId: z.string(),
     }),
   )
-  .mutation(async ({ input: { categoryId, businessId } }) => {
+  .mutation(async ({ input: { categoryId, businessId }, ctx }) => {
     try {
       const category = await prisma.category.findFirst({
         where: { id: categoryId, businessId },
@@ -74,12 +71,14 @@ export const deleteCategory = protectedProcedure
           },
         },
       });
+      
       if (!category) {
         throw new TRPCError({
           code: 'FORBIDDEN',
           message: 'You do not have permission to delete this category',
         });
       }
+      
       if (category._count.products > 0) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
@@ -90,16 +89,12 @@ export const deleteCategory = protectedProcedure
       await prisma.category.delete({
         where: { id: categoryId },
       });
+      
       return { success: true };
     } catch (error: unknown) {
-      if (error instanceof TRPCError) {
-        throw error;
-      }
-
-      const { code, message } = handlePrismaError(error);
-      throw new TRPCError({
-        code,
-        message: message ?? 'Failed to delete category',
+      handleControllerError(error, {
+        operation: 'delete category',
+        userId: ctx.userId,
       });
     }
   });

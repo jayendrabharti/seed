@@ -3,22 +3,20 @@ import { protectedProcedure } from '../trpc/procedures';
 import * as z from 'zod';
 import { TRPCError } from '@trpc/server';
 import { productSchema } from '@seed/schemas';
+import { handleControllerError } from '../helpers/controllerErrorHandler';
 
 export const addProduct = protectedProcedure
   .input(productSchema)
-  .mutation(async ({ input }) => {
+  .mutation(async ({ input, ctx }) => {
     try {
       const newProduct = await prisma.product.create({
         data: input,
       });
       return newProduct;
-    } catch (error) {
-      console.error(error); // Log the actual error for debugging
-      console.log('\nAdd product error: ', error);
-      throw new TRPCError({
-        code: 'INTERNAL_SERVER_ERROR',
-        message: 'Failed to add product',
-        cause: error,
+    } catch (error: unknown) {
+      handleControllerError(error, {
+        operation: 'add product',
+        userId: ctx.userId,
       });
     }
   });
@@ -30,7 +28,7 @@ export const getProductCount = protectedProcedure
       isActive: z.boolean().optional().default(true),
     }),
   )
-  .query(async ({ input }) => {
+  .query(async ({ input, ctx }) => {
     try {
       const count = await prisma.product.count({
         where: {
@@ -39,10 +37,10 @@ export const getProductCount = protectedProcedure
         },
       });
       return count;
-    } catch (error) {
-      throw new TRPCError({
-        code: 'INTERNAL_SERVER_ERROR',
-        message: 'Failed to get product count',
+    } catch (error: unknown) {
+      handleControllerError(error, {
+        operation: 'get product count',
+        userId: ctx.userId,
       });
     }
   });
@@ -79,6 +77,7 @@ export const getProducts = protectedProcedure
         isActive,
         stockStatus,
       },
+      ctx
     }) => {
       try {
         const where: any = { businessId };
@@ -139,13 +138,12 @@ export const getProducts = protectedProcedure
           }),
           prisma.product.count({ where }),
         ]);
+        
         return { products, totalCount };
-      } catch (error) {
-        console.error(error);
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to fetch products',
-          cause: error,
+      } catch (error: unknown) {
+        handleControllerError(error, {
+          operation: 'fetch products',
+          userId: ctx.userId,
         });
       }
     },
@@ -153,7 +151,7 @@ export const getProducts = protectedProcedure
 
 export const getProductById = protectedProcedure
   .input(z.object({ id: z.string() }))
-  .query(async ({ input }) => {
+  .query(async ({ input, ctx }) => {
     try {
       const product = await prisma.product.findUnique({
         where: { id: input.id },
@@ -181,11 +179,10 @@ export const getProductById = protectedProcedure
       }
 
       return product;
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({
-        code: 'INTERNAL_SERVER_ERROR',
-        message: 'Failed to fetch product',
+    } catch (error: unknown) {
+      handleControllerError(error, {
+        operation: 'fetch product',
+        userId: ctx.userId,
       });
     }
   });
@@ -197,7 +194,7 @@ export const updateProduct = protectedProcedure
       data: productSchema.partial(),
     }),
   )
-  .mutation(async ({ input }) => {
+  .mutation(async ({ input, ctx }) => {
     try {
       const updatedProduct = await prisma.product.update({
         where: { id: input.id },
@@ -212,42 +209,42 @@ export const updateProduct = protectedProcedure
         },
       });
       return updatedProduct;
-    } catch (error) {
-      throw new TRPCError({
-        code: 'INTERNAL_SERVER_ERROR',
-        message: 'Failed to update product',
+    } catch (error: unknown) {
+      handleControllerError(error, {
+        operation: 'update product',
+        userId: ctx.userId,
       });
     }
   });
 
 export const deleteProduct = protectedProcedure
   .input(z.object({ id: z.string() }))
-  .mutation(async ({ input }) => {
+  .mutation(async ({ input, ctx }) => {
     try {
       await prisma.product.delete({
         where: { id: input.id },
       });
       return { success: true };
-    } catch (error) {
-      throw new TRPCError({
-        code: 'INTERNAL_SERVER_ERROR',
-        message: 'Failed to delete product',
+    } catch (error: unknown) {
+      handleControllerError(error, {
+        operation: 'delete product',
+        userId: ctx.userId,
       });
     }
   });
 
 export const bulkDeleteProducts = protectedProcedure
   .input(z.object({ ids: z.array(z.string()) }))
-  .mutation(async ({ input }) => {
+  .mutation(async ({ input, ctx }) => {
     try {
       await prisma.product.deleteMany({
         where: { id: { in: input.ids } },
       });
       return { success: true, count: input.ids.length };
-    } catch (error) {
-      throw new TRPCError({
-        code: 'INTERNAL_SERVER_ERROR',
-        message: 'Failed to delete products',
+    } catch (error: unknown) {
+      handleControllerError(error, {
+        operation: 'bulk delete products',
+        userId: ctx.userId,
       });
     }
   });

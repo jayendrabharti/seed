@@ -3,6 +3,7 @@ import * as z from 'zod';
 import { TRPCError } from '@trpc/server';
 import crypto from 'crypto';
 import sendMail from '../helpers/sendMail';
+import { handleControllerError } from '../helpers/controllerErrorHandler';
 import {
   accessTokenCookieOptions,
   generateTokens,
@@ -28,22 +29,36 @@ import { createUploadUrl } from '../helpers/aws/s3Upload';
 import { S3UploadUrlResponse } from '../types/s3';
 
 export const getUser = protectedProcedure.query(async ({ ctx }) => {
-  const user = await prisma.user.findUnique({
-    where: {
-      id: ctx.userId,
-    },
-  });
-  return user;
+  try {
+    const user = await prisma.user.findUnique({
+      where: {
+        id: ctx.userId,
+      },
+    });
+    return user;
+  } catch (error: unknown) {
+    handleControllerError(error, {
+      operation: 'fetch user',
+      userId: ctx.userId,
+    });
+  }
 });
 
 export const updateUser = protectedProcedure
   .input(z.object({ name: z.string() }))
   .mutation(async ({ input: { name }, ctx }) => {
-    const updatedUser = await prisma.user.update({
-      where: { id: ctx.userId },
-      data: { name },
-    });
-    return updatedUser;
+    try {
+      const updatedUser = await prisma.user.update({
+        where: { id: ctx.userId },
+        data: { name },
+      });
+      return updatedUser;
+    } catch (error: unknown) {
+      handleControllerError(error, {
+        operation: 'update user',
+        userId: ctx.userId,
+      });
+    }
   });
 
 export const getUserProfileUploadUrl = protectedProcedure
@@ -62,28 +77,35 @@ export const getUserProfileUploadUrl = protectedProcedure
     }),
   )
   .query(async ({ input: { contentType }, ctx: { userId } }) => {
-    const key = `profiles/${userId}-avatar.png`;
+    try {
+      const key = `profiles/${userId}-avatar.png`;
 
-    const uploadData: S3UploadUrlResponse = await createUploadUrl({
-      contentType,
-      key,
-      isPublic: true,
-    });
+      const uploadData: S3UploadUrlResponse = await createUploadUrl({
+        contentType,
+        key,
+        isPublic: true,
+      });
 
-    if (!uploadData.publicUrl) {
-      throw new TRPCError({
-        code: 'INTERNAL_SERVER_ERROR',
-        message: 'Failed to generate public URL',
+      if (!uploadData.publicUrl) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to generate public URL',
+        });
+      }
+
+      return {
+        uploadUrl: uploadData.uploadUrl,
+        publicUrl: uploadData.publicUrl,
+        bucket: uploadData.bucket,
+        key: uploadData.key,
+        visibility: uploadData.visibility,
+      };
+    } catch (error: unknown) {
+      handleControllerError(error, {
+        operation: 'generate profile upload URL',
+        userId,
       });
     }
-
-    return {
-      uploadUrl: uploadData.uploadUrl,
-      publicUrl: uploadData.publicUrl,
-      bucket: uploadData.bucket,
-      key: uploadData.key,
-      visibility: uploadData.visibility,
-    };
   });
 
 export const setProfilePicture = protectedProcedure
@@ -93,11 +115,18 @@ export const setProfilePicture = protectedProcedure
     }),
   )
   .mutation(async ({ input: { imageUrl }, ctx: { userId } }) => {
-    await prisma.user.update({
-      where: { id: userId },
-      data: { picture: imageUrl },
-    });
-    return { success: true };
+    try {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { picture: imageUrl },
+      });
+      return { success: true };
+    } catch (error: unknown) {
+      handleControllerError(error, {
+        operation: 'set profile picture',
+        userId,
+      });
+    }
   });
 
 export const emailLogin = publicProcedure
@@ -107,75 +136,81 @@ export const emailLogin = publicProcedure
     }),
   )
   .mutation(async ({ input: { email } }) => {
-    let user = await prisma.user.findUnique({ where: { email } });
+    try {
+      let user = await prisma.user.findUnique({ where: { email } });
 
-    if (!user) {
-      user = await prisma.user.create({
+      if (!user) {
+        user = await prisma.user.create({
+          data: {
+            email,
+          },
+        });
+        sendWelcomeEmail(email);
+      }
+
+      if (!user)
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'User not found',
+          cause: 'Failed to create user',
+        });
+
+      // Check for recent OTP request (rate limiting)
+      const recentOtp = await prisma.otp.findFirst({
+        where: {
+          email,
+          createdAt: {
+            gte: new Date(Date.now() - 60 * 1000), // Within last minute
+          },
+        },
+      });
+
+      if (recentOtp) {
+        throw new TRPCError({
+          code: 'TOO_MANY_REQUESTS',
+          message: 'Please wait before requesting another OTP',
+        });
+      }
+
+      // Delete expired OTPs and old unverified ones
+      await prisma.otp.deleteMany({
+        where: {
+          email,
+          OR: [{ expiresAt: { lt: new Date() } }, { verifiedAt: { not: null } }],
+        },
+      });
+
+      let otp;
+      if (!isProduction && testUser && testUser.email === email) {
+        otp = testUser.otp;
+      } else {
+        otp = crypto.randomInt(100000, 1000000).toString(); // 6-digit OTP
+      }
+
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes from now
+
+      await prisma.otp.create({
         data: {
           email,
+          otp,
+          expiresAt,
         },
       });
-      sendWelcomeEmail(email);
-    }
 
-    if (!user)
-      throw new TRPCError({
-        code: 'NOT_FOUND',
-        message: 'User not found',
-        cause: 'Failed to create user',
-      });
+      if (!(testUser && testUser.email === email)) {
+        await sendMail({
+          to: email,
+          subject: 'Verify your email for SEED',
+          content: otpEmailTemplate({ otp, to: email, exp: expiresAt }),
+        });
+      }
 
-    // Check for recent OTP request (rate limiting)
-    const recentOtp = await prisma.otp.findFirst({
-      where: {
-        email,
-        createdAt: {
-          gte: new Date(Date.now() - 60 * 1000), // Within last minute
-        },
-      },
-    });
-
-    if (recentOtp) {
-      throw new TRPCError({
-        code: 'TOO_MANY_REQUESTS',
-        message: 'Please wait before requesting another OTP',
+      return { otpExpiresAt: expiresAt, message: `OTP sent to ${email}` };
+    } catch (error: unknown) {
+      handleControllerError(error, {
+        operation: 'send login OTP',
       });
     }
-
-    // Delete expired OTPs and old unverified ones
-    await prisma.otp.deleteMany({
-      where: {
-        email,
-        OR: [{ expiresAt: { lt: new Date() } }, { verifiedAt: { not: null } }],
-      },
-    });
-
-    let otp;
-    if (!isProduction && testUser && testUser.email === email) {
-      otp = testUser.otp;
-    } else {
-      otp = crypto.randomInt(100000, 1000000).toString(); // 6-digit OTP
-    }
-
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes from now
-
-    await prisma.otp.create({
-      data: {
-        email,
-        otp,
-        expiresAt,
-      },
-    });
-
-    if (!(testUser && testUser.email === email)) {
-      await sendMail({
-        to: email,
-        subject: 'Verify your email for SEED',
-        content: otpEmailTemplate({ otp, to: email, exp: expiresAt }),
-      });
-    }
-
-    return { otpExpiresAt: expiresAt, message: `OTP sent to ${email}` };
   });
 
 export const emailVerify = publicProcedure
@@ -186,75 +221,81 @@ export const emailVerify = publicProcedure
     }),
   )
   .mutation(async ({ input: { email, otp }, ctx: { req, res } }) => {
-    const otpRecord = await prisma.otp.findFirst({
-      where: {
-        email,
-        verifiedAt: null, // Only get unverified OTPs
-      },
-      orderBy: {
-        createdAt: 'desc', // Get the most recent one
-      },
-    });
-
-    if (!otpRecord) {
-      throw new TRPCError({
-        code: 'UNAUTHORIZED',
-        message: 'No OTP found for this email',
+    try {
+      const otpRecord = await prisma.otp.findFirst({
+        where: {
+          email,
+          verifiedAt: null, // Only get unverified OTPs
+        },
+        orderBy: {
+          createdAt: 'desc', // Get the most recent one
+        },
       });
-    }
 
-    // Check if expired
-    if (otpRecord.expiresAt < new Date()) {
-      throw new TRPCError({
-        code: 'UNAUTHORIZED',
-        message: 'OTP has expired',
-      });
-    }
+      if (!otpRecord) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'No OTP found for this email',
+        });
+      }
 
-    // Check max attempts (prevent brute force)
-    if (otpRecord.attempts >= 5) {
-      await prisma.otp.delete({ where: { id: otpRecord.id } });
-      throw new TRPCError({
-        code: 'UNAUTHORIZED',
-        message: 'Too many failed attempts. Please request a new OTP.',
-      });
-    }
+      // Check if expired
+      if (otpRecord.expiresAt < new Date()) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'OTP has expired',
+        });
+      }
 
-    // Check if OTP matches
-    if (otpRecord.otp !== otp) {
-      // Increment attempts
+      // Check max attempts (prevent brute force)
+      if (otpRecord.attempts >= 5) {
+        await prisma.otp.delete({ where: { id: otpRecord.id } });
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Too many failed attempts. Please request a new OTP.',
+        });
+      }
+
+      // Check if OTP matches
+      if (otpRecord.otp !== otp) {
+        // Increment attempts
+        await prisma.otp.update({
+          where: { id: otpRecord.id },
+          data: { attempts: { increment: 1 } },
+        });
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: `Invalid OTP. ${4 - otpRecord.attempts} attempts remaining.`,
+        });
+      }
+
+      // Mark OTP as verified
       await prisma.otp.update({
         where: { id: otpRecord.id },
-        data: { attempts: { increment: 1 } },
+        data: { verifiedAt: new Date() },
       });
-      throw new TRPCError({
-        code: 'UNAUTHORIZED',
-        message: `Invalid OTP. ${4 - otpRecord.attempts} attempts remaining.`,
+
+      const user = await prisma.user.findUnique({ where: { email } });
+
+      const { accessToken, refreshToken } = await generateTokens(
+        req,
+        res,
+        user!,
+        'cookie',
+      );
+
+      return {
+        accessToken,
+        refreshToken,
+        email,
+        message: 'OTP verified successfully',
+        success: true,
+      };
+    } catch (error: unknown) {
+      handleControllerError(error, {
+        operation: 'verify OTP',
       });
     }
-
-    // Mark OTP as verified
-    await prisma.otp.update({
-      where: { id: otpRecord.id },
-      data: { verifiedAt: new Date() },
-    });
-
-    const user = await prisma.user.findUnique({ where: { email } });
-
-    const { accessToken, refreshToken } = await generateTokens(
-      req,
-      res,
-      user!,
-      'cookie',
-    );
-
-    return {
-      accessToken,
-      refreshToken,
-      email,
-      message: 'OTP verified successfully',
-      success: true,
-    };
   });
 
 export const googleAuthUrl = publicProcedure
@@ -264,82 +305,101 @@ export const googleAuthUrl = publicProcedure
     }),
   )
   .query(async ({ input: { type }, ctx: { req, res } }) => {
-    const authorizeUrl = oAuth2Client.generateAuthUrl({
-      access_type: 'offline',
-      scope: [
-        'https://www.googleapis.com/auth/userinfo.profile',
-        'https://www.googleapis.com/auth/userinfo.email',
-      ],
-      prompt: 'consent',
-    });
-    if (type === 'redirect') {
-      return res.redirect(authorizeUrl);
+    try {
+      const authorizeUrl = oAuth2Client.generateAuthUrl({
+        access_type: 'offline',
+        scope: [
+          'https://www.googleapis.com/auth/userinfo.profile',
+          'https://www.googleapis.com/auth/userinfo.email',
+        ],
+        prompt: 'consent',
+      });
+      if (type === 'redirect') {
+        return res.redirect(authorizeUrl);
+      }
+      return { url: authorizeUrl };
+    } catch (error: unknown) {
+      handleControllerError(error, {
+        operation: 'generate Google OAuth URL',
+      });
     }
-    return { url: authorizeUrl };
   });
 
 export const googleAuthCallback = publicProcedure
   .input(z.object({ code: z.string() }))
   .mutation(async ({ input: { code }, ctx: { req, res } }) => {
-    const { tokens } = await oAuth2Client.getToken(code);
-    oAuth2Client.setCredentials(tokens);
+    try {
+      const { tokens } = await oAuth2Client.getToken(code);
+      oAuth2Client.setCredentials(tokens);
 
-    const { access_token, id_token } = tokens;
+      const { access_token, id_token } = tokens;
 
-    const { data } = await axios.get(
-      'https://www.googleapis.com/oauth2/v1/userinfo?alt=json',
-      {
-        headers: {
-          Authorization: `Bearer ${access_token}`,
+      const { data } = await axios.get(
+        'https://www.googleapis.com/oauth2/v1/userinfo?alt=json',
+        {
+          headers: {
+            Authorization: `Bearer ${access_token}`,
+          },
         },
-      },
-    );
+      );
 
-    const { email, name, picture } = data as {
-      email: string;
-      name: string;
-      picture: string;
-    };
+      const { email, name, picture } = data as {
+        email: string;
+        name: string;
+        picture: string;
+      };
 
-    let user = await prisma.user.findUnique({ where: { email } });
+      let user = await prisma.user.findUnique({ where: { email } });
 
-    if (!user) {
-      user = await prisma.user.create({
-        data: { email, name, picture },
+      if (!user) {
+        user = await prisma.user.create({
+          data: { email, name, picture },
+        });
+        sendWelcomeEmail(email);
+      }
+
+      // 🔐 sets httpOnly cookies
+      await generateTokens(req, res, user, 'cookie');
+
+      return { success: true };
+    } catch (error: unknown) {
+      handleControllerError(error, {
+        operation: 'Google OAuth callback',
       });
-      sendWelcomeEmail(email);
     }
-
-    // 🔐 sets httpOnly cookies
-    await generateTokens(req, res, user, 'cookie');
-
-    return { success: true };
   });
 
 export const logout = protectedProcedure.mutation(
   async ({ ctx: { req, res, userId } }) => {
-    const clientRefreshToken =
-      req.cookies?.['refresh-token'] || req.headers['refresh-token'];
+    try {
+      const clientRefreshToken =
+        req.cookies?.['refresh-token'] || req.headers['refresh-token'];
 
-    // Revoke the specific refresh token if provided
-    if (clientRefreshToken) {
-      await prisma.refreshToken.updateMany({
-        where: {
-          token: clientRefreshToken,
-          userId: userId,
-        },
-        data: {
-          isRevoked: true,
-        },
+      // Revoke the specific refresh token if provided
+      if (clientRefreshToken) {
+        await prisma.refreshToken.updateMany({
+          where: {
+            token: clientRefreshToken,
+            userId: userId,
+          },
+          data: {
+            isRevoked: true,
+          },
+        });
+      }
+
+      // Clear cookies
+      res
+        .clearCookie('access-token', accessTokenCookieOptions)
+        .clearCookie('refresh-token', refreshTokenCookieOptions);
+
+      return { message: 'User logged out successfully', success: true };
+    } catch (error: unknown) {
+      handleControllerError(error, {
+        operation: 'logout',
+        userId,
       });
     }
-
-    // Clear cookies
-    res
-      .clearCookie('access-token', accessTokenCookieOptions)
-      .clearCookie('refresh-token', refreshTokenCookieOptions);
-
-    return { message: 'User logged out successfully', success: true };
   },
 );
 
@@ -351,90 +411,103 @@ export const getNewAccessToken = publicProcedure
     }),
   )
   .query(async ({ input: { refreshToken, method }, ctx: { req, res } }) => {
-    const clientRefreshToken =
-      req.cookies?.['refresh-token'] ||
-      req.headers['refresh-token'] ||
-      refreshToken;
-
-    if (!clientRefreshToken) {
-      throw new TRPCError({
-        code: 'UNAUTHORIZED',
-        message: 'No refresh token provided',
-      });
-    }
-
-    let userId: string;
     try {
-      const payload = jwt.verify(
-        clientRefreshToken,
-        refreshSecret,
-      ) as RefreshTokenPayload;
-      userId = payload.userId;
-    } catch (error) {
-      throw new TRPCError({
-        code: 'UNAUTHORIZED',
-        message: 'Invalid or expired refresh token',
-        cause: error,
+      const clientRefreshToken =
+        req.cookies?.['refresh-token'] ||
+        req.headers['refresh-token'] ||
+        refreshToken;
+
+      if (!clientRefreshToken) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'No refresh token provided',
+        });
+      }
+
+      let userId: string;
+      try {
+        const payload = jwt.verify(
+          clientRefreshToken,
+          refreshSecret,
+        ) as RefreshTokenPayload;
+        userId = payload.userId;
+      } catch (error) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Invalid or expired refresh token',
+          cause: error,
+        });
+      }
+
+      const dbRefreshToken = await prisma.refreshToken.findUnique({
+        where: { userId: userId, token: clientRefreshToken },
+        include: { user: true },
+      });
+
+      if (!dbRefreshToken) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Refresh token not found in database',
+        });
+      }
+
+      if (dbRefreshToken.isRevoked) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Refresh token has been revoked',
+        });
+      }
+
+      if (dbRefreshToken.expiresAt < new Date()) {
+        // Clean up expired token
+        await prisma.refreshToken.delete({
+          where: { id: dbRefreshToken.id },
+        });
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Refresh token has expired',
+        });
+      }
+
+      if (!dbRefreshToken.user) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'User not found',
+        });
+      }
+
+      const {
+        accessToken: newAccessToken,
+        refreshToken: newRefreshToken,
+        accessTokenCookieOptions,
+        refreshTokenCookieOptions,
+      } = await generateTokens(req, res, dbRefreshToken.user, method);
+
+      return {
+        accessToken: newAccessToken,
+        refreshToken: newRefreshToken,
+        accessTokenCookieOptions,
+        refreshTokenCookieOptions,
+      };
+    } catch (error: unknown) {
+      handleControllerError(error, {
+        operation: 'refresh access token',
       });
     }
-
-    const dbRefreshToken = await prisma.refreshToken.findUnique({
-      where: { userId: userId, token: clientRefreshToken },
-      include: { user: true },
-    });
-
-    if (!dbRefreshToken) {
-      throw new TRPCError({
-        code: 'UNAUTHORIZED',
-        message: 'Refresh token not found in database',
-      });
-    }
-
-    if (dbRefreshToken.isRevoked) {
-      throw new TRPCError({
-        code: 'UNAUTHORIZED',
-        message: 'Refresh token has been revoked',
-      });
-    }
-
-    if (dbRefreshToken.expiresAt < new Date()) {
-      // Clean up expired token
-      await prisma.refreshToken.delete({
-        where: { id: dbRefreshToken.id },
-      });
-      throw new TRPCError({
-        code: 'UNAUTHORIZED',
-        message: 'Refresh token has expired',
-      });
-    }
-
-    if (!dbRefreshToken.user) {
-      throw new TRPCError({
-        code: 'NOT_FOUND',
-        message: 'User not found',
-      });
-    }
-
-    const {
-      accessToken: newAccessToken,
-      refreshToken: newRefreshToken,
-      accessTokenCookieOptions,
-      refreshTokenCookieOptions,
-    } = await generateTokens(req, res, dbRefreshToken.user, method);
-
-    return {
-      accessToken: newAccessToken,
-      refreshToken: newRefreshToken,
-      accessTokenCookieOptions,
-      refreshTokenCookieOptions,
-    };
   });
 
 // Session management endpoints
 export const getActiveSessions = protectedProcedure.query(
   async ({ ctx: { userId } }) => {
-    const sessions = await getUserActiveSessions(userId);
-    return sessions;
+    try {
+      const sessions = await getUserActiveSessions(userId);
+      return sessions;
+    } catch (error: unknown) {
+      handleControllerError(error, {
+        operation: 'fetch active sessions',
+        userId,
+      });
+    }
   },
 );
 
@@ -445,38 +518,59 @@ export const revokeSessionById = protectedProcedure
     }),
   )
   .mutation(async ({ input: { sessionId }, ctx: { userId } }) => {
-    const revoked = await revokeSession(sessionId, userId);
-    if (!revoked) {
-      throw new TRPCError({
-        code: 'NOT_FOUND',
-        message: 'Session not found or already revoked',
+    try {
+      const revoked = await revokeSession(sessionId, userId);
+      if (!revoked) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Session not found or already revoked',
+        });
+      }
+      return { message: 'Session revoked successfully', success: true };
+    } catch (error: unknown) {
+      handleControllerError(error, {
+        operation: 'revoke session',
+        userId,
       });
     }
-    return { message: 'Session revoked successfully', success: true };
   });
 
 export const revokeAllSessions = protectedProcedure.mutation(
   async ({ ctx: { userId, res } }) => {
-    const count = await revokeAllUserTokens(userId);
+    try {
+      const count = await revokeAllUserTokens(userId);
 
-    // Clear current session cookies
-    res
-      .clearCookie('access-token', accessTokenCookieOptions)
-      .clearCookie('refresh-token', refreshTokenCookieOptions);
+      // Clear current session cookies
+      res
+        .clearCookie('access-token', accessTokenCookieOptions)
+        .clearCookie('refresh-token', refreshTokenCookieOptions);
 
-    return {
-      message: `All ${count} sessions revoked successfully`,
-      success: true,
-      count,
-    };
+      return {
+        message: `All ${count} sessions revoked successfully`,
+        success: true,
+        count,
+      };
+    } catch (error: unknown) {
+      handleControllerError(error, {
+        operation: 'revoke all sessions',
+        userId,
+      });
+    }
   },
 );
 
 // Admin endpoint to clean up expired tokens
-export const cleanupTokens = protectedProcedure.mutation(async () => {
-  const result = await cleanupExpiredTokens();
-  return {
-    message: 'Token cleanup completed',
-    ...result,
-  };
+export const cleanupTokens = protectedProcedure.mutation(async ({ ctx }) => {
+  try {
+    const result = await cleanupExpiredTokens();
+    return {
+      message: 'Token cleanup completed',
+      ...result,
+    };
+  } catch (error: unknown) {
+    handleControllerError(error, {
+      operation: 'cleanup expired tokens',
+      userId: ctx.userId,
+    });
+  }
 });

@@ -11,14 +11,6 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Pencil, Trash2 } from 'lucide-react';
-import type { Product, Category } from '@seed/database';
-
-interface ProductWithCategory extends Product {
-  category?: {
-    id: string;
-    name: string;
-  } | null;
-}
 
 interface ProductDetailSheetProps {
   product: ProductWithCategory | null;

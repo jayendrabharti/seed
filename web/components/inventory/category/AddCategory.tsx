@@ -14,6 +14,8 @@ import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { useBusiness } from '@/providers/BusinessProvider';
+import { useCategories } from '@/providers/CategoriesProvider';
+import { TRPCClientError } from '@seed/api';
 import { clientTrpc } from '@seed/api/client';
 import { PlusIcon } from 'lucide-react';
 import { useState } from 'react';
@@ -21,26 +23,36 @@ import { toast } from 'sonner';
 
 export default function AddCategory({
   className = '',
+  onCategoryCreated,
 }: {
   className?: string;
+  onCategoryCreated?: (args: { newCategoryId: string }) => Promise<void>;
 }) {
   const [isCreatingCategory, setIsCreatingCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryDescription, setNewCategoryDescription] = useState('');
-  const utils = clientTrpc.useUtils();
   const { activeBusiness } = useBusiness();
+  const { refresh: refreshCategories } = useCategories();
 
   const createCategoryMutation = clientTrpc.category.createCategory.useMutation(
     {
-      onSuccess: (newCategory: any) => {
+      onSuccess: async (newCategory: any) => {
         toast.success('Category created successfully!');
-        utils.category.getCategoriesByBusinessId.invalidate();
+        await refreshCategories();
         setIsCreatingCategory(false);
         setNewCategoryName('');
         setNewCategoryDescription('');
+        if (onCategoryCreated) {
+          await onCategoryCreated({ newCategoryId: newCategory.id });
+        }
       },
       onError: (error: any) => {
-        toast.error(error.message || 'Failed to create category');
+        if (error instanceof TRPCClientError) {
+          console.log(error);
+          toast.error(error.message);
+        } else {
+          toast.error(error.message ?? 'An unexpected error occurred');
+        }
       },
     },
   );

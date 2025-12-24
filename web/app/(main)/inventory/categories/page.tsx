@@ -1,15 +1,45 @@
 'use client';
 import AddCategory from '@/components/inventory/category/AddCategory';
+import CategoryCard from '@/components/inventory/category/CategoryCard';
 import PageTitle from '@/components/main/PageTitle';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
+import { useBusiness } from '@/providers/BusinessProvider';
 import { useCategories } from '@/providers/CategoriesProvider';
-import { ArrowLeftIcon, ExternalLinkIcon } from 'lucide-react';
+import { TRPCClientError } from '@seed/api';
+import { clientTrpc } from '@seed/api/client';
+import { ArrowLeftIcon } from 'lucide-react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 
 export default function CategoriesPage() {
-  const { categories, isLoading } = useCategories();
+  const { categories, isLoading, refresh } = useCategories();
+  const { activeBusiness } = useBusiness();
+
+  const deleteCategoryMutation =
+    clientTrpc.category.deleteCategory.useMutation();
+
+  const handleDeleteCategory = async (categoryId: string) => {
+    if (!activeBusiness) return;
+    try {
+      const { success } = await deleteCategoryMutation.mutateAsync({
+        categoryId,
+        businessId: activeBusiness.id,
+      });
+
+      if (success) {
+        toast.success('Category deleted successfully');
+        await refresh();
+      }
+    } catch (error) {
+      if (error instanceof TRPCClientError) {
+        toast.error('Failed to delete category', {
+          description: error.message,
+        });
+      }
+    }
+  };
 
   return (
     <>
@@ -31,19 +61,12 @@ export default function CategoriesPage() {
       )}
       <div className="flex flex-row flex-wrap gap-4 p-4">
         {categories?.map((category, index) => (
-          <div
+          <CategoryCard
             key={category.id}
-            className="border-border flex flex-1 items-center justify-between gap-2 rounded-md border p-4 text-lg font-medium"
-          >
-            <span>
-              {index + 1}. {category.name}
-            </span>
-            <Link href={`/inventory?categoryId=${category.id}`}>
-              <Button variant={'outline'} className="">
-                <ExternalLinkIcon />
-              </Button>
-            </Link>
-          </div>
+            sno={index + 1}
+            category={category}
+            handleDelete={async () => await handleDeleteCategory(category.id)}
+          />
         ))}
       </div>
     </>

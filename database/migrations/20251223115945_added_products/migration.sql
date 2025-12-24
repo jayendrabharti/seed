@@ -58,9 +58,6 @@ CREATE UNIQUE INDEX "categories_businessId_name_key" ON "categories"("businessId
 CREATE UNIQUE INDEX "products_sku_key" ON "products"("sku");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "products_barcode_key" ON "products"("barcode");
-
--- CreateIndex
 CREATE INDEX "products_businessId_name_idx" ON "products"("businessId", "name");
 
 -- AddForeignKey

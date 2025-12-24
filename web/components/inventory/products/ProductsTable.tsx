@@ -34,7 +34,6 @@ import {
   Trash2,
 } from 'lucide-react';
 import ProductDetailSheet from './ProductDetailSheet';
-import type { Product } from '@seed/database';
 import { toast } from 'sonner';
 import {
   AlertDialog,
@@ -46,13 +45,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-
-interface ProductWithCategory extends Product {
-  category?: {
-    id: string;
-    name: string;
-  } | null;
-}
+import Image from 'next/image';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 type SortOrder = 'asc' | 'desc';
 type OrderBy = 'createdAt' | 'name' | 'currentStockLevel' | 'sellingPrice';
@@ -62,17 +56,21 @@ export default function ProductsTable() {
   const { currentBusinessMembership } = useBusiness();
   const activeBusiness = currentBusinessMembership?.business;
   const utils = clientTrpc.useUtils();
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
   // Table state
-  const [pageNumber, setPageNumber] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [search, setSearch] = useState('');
-  const [orderBy, setOrderBy] = useState<OrderBy>('createdAt');
-  const [order, setOrder] = useState<SortOrder>('desc');
-  const [categoryFilter, setCategoryFilter] = useState<string>('');
-  const [activeFilter, setActiveFilter] = useState<string>('all');
-  const [stockStatusFilter, setStockStatusFilter] =
-    useState<StockStatus>('all');
+  // Sync state with search params
+  const getParam = (key: string, fallback: string) =>
+    searchParams.get(key) || fallback;
+  const pageNumber = Number(getParam('page', '1'));
+  const pageSize = Number(getParam('pageSize', '10'));
+  const search = getParam('search', '');
+  const orderBy = getParam('orderBy', 'createdAt') as OrderBy;
+  const order = getParam('order', 'desc') as SortOrder;
+  const categoryFilter = getParam('categoryId', 'all');
+  const activeFilter = getParam('active', 'all');
+  const stockStatusFilter = getParam('stockStatus', 'all') as StockStatus;
 
   // Sheet state
   const [selectedProduct, setSelectedProduct] =
@@ -93,7 +91,7 @@ export default function ProductsTable() {
         order,
         orderBy,
         search: search || undefined,
-        categoryId: categoryFilter || undefined,
+        categoryId: categoryFilter === 'all' ? undefined : categoryFilter,
         isActive:
           activeFilter === 'all'
             ? undefined
@@ -130,13 +128,31 @@ export default function ProductsTable() {
   const totalCount = data?.totalCount || 0;
   const totalPages = Math.ceil(totalCount / pageSize);
 
+  // Update search params utility
+  const updateParams = (
+    params: Record<string, string | number | undefined>,
+  ) => {
+    const newParams = new URLSearchParams(searchParams.toString());
+    Object.entries(params).forEach(([key, value]) => {
+      if (value === undefined || value === '' || value === 'all') {
+        newParams.delete(key);
+      } else {
+        newParams.set(key, String(value));
+      }
+    });
+    router.replace(`?${newParams.toString()}`);
+  };
+
   const handleSort = (column: OrderBy) => {
     if (orderBy === column) {
-      setOrder(order === 'asc' ? 'desc' : 'asc');
+      updateParams({
+        order: order === 'asc' ? 'desc' : 'asc',
+        orderBy: column,
+      });
     } else {
-      setOrderBy(column);
-      setOrder('asc');
+      updateParams({ orderBy: column, order: 'asc' });
     }
+    updateParams({ page: 1 });
   };
 
   const getSortIcon = (column: OrderBy) => {
@@ -173,9 +189,9 @@ export default function ProductsTable() {
         : typeof value === 'number'
           ? value
           : Number(value);
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'INR',
     }).format(numValue);
   };
 
@@ -217,8 +233,7 @@ export default function ProductsTable() {
             placeholder="Search by name, SKU, or barcode..."
             value={search}
             onChange={(e) => {
-              setSearch(e.target.value);
-              setPageNumber(1);
+              updateParams({ search: e.target.value, page: 1 });
             }}
             className="pl-9"
           />
@@ -228,8 +243,7 @@ export default function ProductsTable() {
         <Select
           value={categoryFilter}
           onValueChange={(value) => {
-            setCategoryFilter(value);
-            setPageNumber(1);
+            updateParams({ categoryId: value, page: 1 });
           }}
         >
           <SelectTrigger className="w-45">
@@ -249,8 +263,7 @@ export default function ProductsTable() {
         <Select
           value={activeFilter}
           onValueChange={(value) => {
-            setActiveFilter(value);
-            setPageNumber(1);
+            updateParams({ active: value, page: 1 });
           }}
         >
           <SelectTrigger className="w-37.5">
@@ -267,10 +280,19 @@ export default function ProductsTable() {
         <Select
           value={stockStatusFilter}
           onValueChange={(value: StockStatus) => {
-            setStockStatusFilter(value);
-            setPageNumber(1);
+            updateParams({ stockStatus: value, page: 1 });
           }}
         >
+          {/* Reset Filters Button */}
+          <Button
+            variant="outline"
+            className="ml-2"
+            onClick={() => {
+              router.replace('?');
+            }}
+          >
+            Reset Filters
+          </Button>
           <SelectTrigger className="w-37.5">
             <SelectValue placeholder="Stock Status" />
           </SelectTrigger>
@@ -288,6 +310,7 @@ export default function ProductsTable() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead></TableHead>
               <TableHead>
                 <Button
                   variant="ghost"
@@ -320,7 +343,6 @@ export default function ProductsTable() {
                   {getSortIcon('sellingPrice')}
                 </Button>
               </TableHead>
-              <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -373,6 +395,17 @@ export default function ProductsTable() {
                   className="cursor-pointer"
                   onClick={() => handleRowClick(product)}
                 >
+                  <TableCell>
+                    {product.image && (
+                      <Image
+                        src={product.image}
+                        alt={product.name}
+                        width={50}
+                        height={50}
+                        className="rounded"
+                      />
+                    )}
+                  </TableCell>
                   <TableCell className="font-medium">{product.name}</TableCell>
                   <TableCell>{product.sku}</TableCell>
                   <TableCell>
@@ -389,11 +422,6 @@ export default function ProductsTable() {
                     </div>
                   </TableCell>
                   <TableCell>{formatCurrency(product.sellingPrice)}</TableCell>
-                  <TableCell>
-                    <Badge variant={product.isActive ? 'default' : 'secondary'}>
-                      {product.isActive ? 'Active' : 'Inactive'}
-                    </Badge>
-                  </TableCell>
                   <TableCell className="text-right">
                     <Button
                       size="sm"
@@ -423,8 +451,7 @@ export default function ProductsTable() {
             <Select
               value={pageSize.toString()}
               onValueChange={(value) => {
-                setPageSize(Number(value));
-                setPageNumber(1);
+                updateParams({ pageSize: value, page: 1 });
               }}
             >
               <SelectTrigger className="w-20">
@@ -443,7 +470,7 @@ export default function ProductsTable() {
             <Button
               variant="outline"
               size="icon"
-              onClick={() => setPageNumber(1)}
+              onClick={() => updateParams({ page: 1 })}
               disabled={pageNumber === 1}
             >
               <ChevronsLeft className="h-4 w-4" />
@@ -451,7 +478,9 @@ export default function ProductsTable() {
             <Button
               variant="outline"
               size="icon"
-              onClick={() => setPageNumber((prev) => Math.max(1, prev - 1))}
+              onClick={() =>
+                updateParams({ page: Math.max(1, pageNumber - 1) })
+              }
               disabled={pageNumber === 1}
             >
               <ChevronLeft className="h-4 w-4" />
@@ -465,7 +494,7 @@ export default function ProductsTable() {
               variant="outline"
               size="icon"
               onClick={() =>
-                setPageNumber((prev) => Math.min(totalPages, prev + 1))
+                updateParams({ page: Math.min(totalPages, pageNumber + 1) })
               }
               disabled={pageNumber >= totalPages}
             >
@@ -474,7 +503,7 @@ export default function ProductsTable() {
             <Button
               variant="outline"
               size="icon"
-              onClick={() => setPageNumber(totalPages)}
+              onClick={() => updateParams({ page: totalPages })}
               disabled={pageNumber >= totalPages}
             >
               <ChevronsRight className="h-4 w-4" />

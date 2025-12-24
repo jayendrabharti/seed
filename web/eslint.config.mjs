@@ -18,6 +18,8 @@ const eslintConfig = defineConfig([
       "@typescript-eslint/no-unused-vars": "off",
       "@typescript-eslint/no-explicit-any": "off",
       "react/no-unescaped-entities": "off",
+      "prefer-const": "off",
+      "@next/next/no-img-element": "off",
     },
   },
 ]);

@@ -1,7 +1,7 @@
 {
   "name": "@seed/api",
   "version": "1.0.0",
-  "description": "",
+  "description": "Shared tRPC API client and types. Note: Has type-only dependency on @seed/server for AppRouter types.",
   "exports": {
     ".": {
       "import": "./index.ts",
@@ -30,25 +30,28 @@
     }
   },
   "scripts": {
+    "lint": "tsc --noEmit",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@seed/server": "workspace:*",
     "@tanstack/react-query": "^5.90.12",
     "@trpc/client": "^11.8.0",
     "@trpc/react-query": "^11.8.0",
     "superjson": "^2.2.6"
   },
   "devDependencies": {
+    "@seed/server": "workspace:*",
     "@types/react": "^19.2.7",
     "next": "16.1.0",
-    "react": "19.2.3"
+    "react": "19.2.3",
+    "typescript": "^5.9.3"
   },
   "peerDependencies": {
-    "next": "16.0.8",
-    "react": "19.2.1"
+    "@trpc/server": "^11.8.0",
+    "next": "16.1.0",
+    "react": "19.2.3"
   }
 }

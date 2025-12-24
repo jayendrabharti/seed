@@ -1,4 +1,4 @@
 import { AppRouter } from '@seed/server';
-import { createTRPCReact } from '@trpc/react-query';
+import { createTRPCReact, type CreateTRPCReact } from '@trpc/react-query';
 
-export const clientTrpc = createTRPCReact<AppRouter>();
+export const clientTrpc: CreateTRPCReact<AppRouter, unknown> = createTRPCReact<AppRouter>();

@@ -1,4 +1,6 @@
 packages:
-  - ./*
-
-nodeLinker: hoisted
+  - web
+  - server
+  - database
+  - schemas
+  - api

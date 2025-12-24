@@ -3,7 +3,7 @@ import { createTRPCProxyClient, httpBatchLink } from '@trpc/client';
 import { cookies, headers } from 'next/headers';
 import SuperJSON from 'superjson';
 
-export const serverTrpc = createTRPCProxyClient<AppRouter>({
+export const serverTrpc: ReturnType<typeof createTRPCProxyClient<AppRouter>> = createTRPCProxyClient<AppRouter>({
   links: [
     httpBatchLink({
       url: process.env.NEXT_PUBLIC_SERVER_BASE_URL + '/api',

@@ -1,6 +1,6 @@
 'use client';
 import PageTitle from '@/components/main/PageTitle';
-import ProductsTable from '@/components/inventory/ProductsTable';
+import ProductsTable from '@/components/inventory/products/ProductsTable';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { ExternalLinkIcon, PlusIcon } from 'lucide-react';

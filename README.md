@@ -343,6 +343,14 @@ pnpm --filter @seed/database db:deploy    # Deploy migrations (production)
 pnpm --filter @seed/database db:studio    # Open Prisma Studio
 ```
 
+### Schemas Package
+
+```bash
+pnpm --filter @seed/schemas build    # Build TypeScript for schemas
+pnpm --filter @seed/schemas clean    # Clean build artifacts
+pnpm --filter @seed/schemas lint     # Lint schemas package
+```
+
 ### Server Package
 
 ```bash
@@ -412,9 +420,27 @@ pnpm --filter @seed/database db:generate
 2. Define tRPC procedures
 3. Add to router in `server/routers/`
 4. Use in frontend with full type safety:
-   ```tsx
-   const { data } = api.yourRoute.useQuery();
-   ```
+
+```tsx
+const { data } = api.yourRoute.useQuery();
+```
+
+### Working with Schemas
+
+The `@seed/schemas` package contains all Zod schemas for input validation and type inference. To update or add schemas:
+
+1. Edit or add files in `schemas/` (e.g., `schemas/inventory.ts`)
+2. Rebuild the package:
+
+```bash
+pnpm --filter @seed/schemas build
+```
+
+3. Import and use schemas in backend or frontend:
+
+```typescript
+import { productSchema } from '@seed/schemas';
+```
 
 ### Environment Variables
 

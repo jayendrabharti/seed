@@ -7,8 +7,7 @@ import { validateENV } from './helpers/validateENV';
 import otpEmailTemplate from './helpers/email-templates/otpEmailTemplate';
 import welcomeEmailTemplate from './helpers/email-templates/welcomeEmailTemplate';
 
-export * from './routers';
-export * from './schemas';
+export type * from './routers';
 
 dotenv.config();
 

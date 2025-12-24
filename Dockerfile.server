@@ -13,13 +13,18 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json ./
 
 # Copy packages
 COPY database ./database
+COPY schemas ./schemas
 COPY server ./server
 
 # Install all dependencies (needed for build)
 RUN pnpm install --frozen-lockfile
 
+
 # Generate Prisma client
 RUN pnpm --filter @seed/database db:generate
+
+# Build schemas package
+RUN pnpm --filter @seed/schemas build
 
 # Build database package
 RUN pnpm --filter @seed/database build
@@ -44,6 +49,11 @@ ENV PORT=8080
 # Copy workspace config (required for pnpm)
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
+
+# Copy built schemas package
+COPY --from=builder /app/schemas/package.json ./schemas/
+COPY --from=builder /app/schemas/dist ./schemas/dist
+
 # Copy built database package
 COPY --from=builder /app/database/package.json ./database/
 COPY --from=builder /app/database/dist ./database/dist
@@ -51,6 +61,11 @@ COPY --from=builder /app/database/generated ./database/generated
 COPY --from=builder /app/database/schema.prisma ./database/
 COPY --from=builder /app/database/migrations ./database/migrations
 COPY --from=builder /app/database/prisma.config.ts ./database/
+
+
+# Copy built schemas package
+COPY --from=builder /app/schemas/package.json ./schemas/
+COPY --from=builder /app/schemas/dist ./schemas/dist
 
 # Copy built server package
 COPY --from=builder /app/server/package.json ./server/

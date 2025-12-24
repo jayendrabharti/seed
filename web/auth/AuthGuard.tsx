@@ -1,8 +1,9 @@
-"use client";
+'use client';
 
-import Unauthenticated from "@/components/auth/Unauthenticated";
-import { SessionContextType, useSession } from "@/providers/SessionProvider";
-import { LoaderCircleIcon } from "lucide-react";
+import Unauthenticated from '@/components/auth/Unauthenticated';
+import { Spinner } from '@/components/ui/spinner';
+import { SessionContextType, useSession } from '@/providers/SessionProvider';
+import { LoaderCircleIcon } from 'lucide-react';
 
 export default function AuthGuard({
   children,
@@ -17,16 +18,16 @@ export default function AuthGuard({
 }) {
   const { user, status }: SessionContextType = useSession();
 
-  if (status === "loading") {
+  if (status === 'loading') {
     return (
-      <div className="flex h-full w-full flex-col items-center justify-center gap-4">
-        <LoaderCircleIcon className="size-16 animate-spin" />
+      <div className="flex h-full min-h-screen w-full flex-col items-center justify-center gap-4">
+        <Spinner className="size-14" />
         <p className="text-muted-foreground">Checking authentication...</p>
       </div>
     );
   }
 
-  if (!user || status !== "authenticated") {
+  if (!user || status !== 'authenticated') {
     const Fallback = fallback;
     return <Fallback title={title} description={description} />;
   }

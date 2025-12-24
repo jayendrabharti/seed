@@ -2,7 +2,7 @@ import { prisma } from '@seed/database';
 import { protectedProcedure } from '../trpc/procedures';
 import * as z from 'zod';
 import { TRPCError } from '@trpc/server';
-import { productSchema } from '../schemas/inventory';
+import { productSchema } from '@seed/schemas';
 
 export const addProduct = protectedProcedure
   .input(productSchema)
@@ -13,9 +13,12 @@ export const addProduct = protectedProcedure
       });
       return newProduct;
     } catch (error) {
+      console.error(error); // Log the actual error for debugging
+      console.log('\nAdd product error: ', error);
       throw new TRPCError({
         code: 'INTERNAL_SERVER_ERROR',
         message: 'Failed to add product',
+        cause: error,
       });
     }
   });

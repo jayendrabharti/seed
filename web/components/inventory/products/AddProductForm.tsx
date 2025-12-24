@@ -30,63 +30,25 @@ import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { Loader2, Plus, X } from 'lucide-react';
 import { useState, useRef } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-
-const productFormSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(100),
-  description: z.string().optional(),
-  sku: z.string().min(1, 'SKU is required'),
-  barcode: z.string().optional(),
-  brand: z.string().optional(),
-  model: z.string().optional(),
-  color: z.string().optional(),
-  size: z.string().optional(),
-  weight: z.string().optional(),
-  dimensions: z.string().optional(),
-  image: z.string().optional(), // Will be set after upload
-  attachments: z.string().optional(), // Will be set after upload
-  unit: z.string(),
-  secondaryUnit: z.string().optional(),
-  unitConvertion: z.string().optional(),
-  currentStockLevel: z.string(),
-  minStockLevel: z.string().optional(),
-  maxStockLevel: z.string().optional(),
-  reorderLevel: z.string().optional(),
-  costPrice: z.string().min(1, 'Cost price is required'),
-  sellingPrice: z.string().min(1, 'Selling price is required'),
-  mrp: z.string().optional(),
-  taxRate: z.string(),
-  discountRate: z.string(),
-  isActive: z.boolean(),
-  isService: z.boolean(),
-  allowNegative: z.boolean(),
-  categoryId: z.string().optional(),
-});
+import { productFormSchema } from '@seed/schemas';
+import AddCategory from '../category/AddCategory';
+import { useCategories } from '@/providers/CategoriesProvider';
+import { Separator } from '../../ui/separator';
 
 type ProductFormValues = z.infer<typeof productFormSchema>;
 
 export default function AddProductForm() {
-  const { currentBusinessMembership } = useBusiness();
-  const activeBusiness = currentBusinessMembership?.business;
+  const { activeBusiness } = useBusiness();
   const router = useRouter();
   const utils = clientTrpc.useUtils();
-  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState('');
-  const [newCategoryDescription, setNewCategoryDescription] = useState('');
-  // File state
+
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
   const [attachments, setAttachments] = useState<File[]>([]);
   const attachmentInputRef = useRef<HTMLInputElement | null>(null);
 
   const getPresignedUrl = clientTrpc.s3.getPresignedUrl.useMutation();
+
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
     defaultValues: {
@@ -121,11 +83,11 @@ export default function AddProductForm() {
     },
   });
 
-  const { data: categories, isLoading: categoriesLoading } =
-    clientTrpc.category.getCategoriesByBusinessId.useQuery(
-      { businessId: activeBusiness?.id || '' },
-      { enabled: !!activeBusiness?.id },
-    );
+  const {
+    categories,
+    isLoading: categoriesLoading,
+    refresh: refreshCategories,
+  } = useCategories();
 
   const addProductMutation = clientTrpc.inventory.addProduct.useMutation({
     onSuccess: () => {
@@ -138,22 +100,15 @@ export default function AddProductForm() {
     },
   });
 
-  const createCategoryMutation = clientTrpc.category.createCategory.useMutation(
-    {
-      onSuccess: (newCategory: any) => {
-        toast.success('Category created successfully!');
-        utils.category.getCategoriesByBusinessId.invalidate();
-        form.setValue('categoryId', newCategory.id);
-        setIsCreatingCategory(false);
-        setNewCategoryName('');
-        setNewCategoryDescription('');
-      },
-      onError: (error: any) => {
-        toast.error(error.message || 'Failed to create category');
-      },
-    },
-  );
-
+  // Handler to be called after a new category is created
+  const handleCategoryCreated = async ({
+    newCategoryId,
+  }: {
+    newCategoryId: string;
+  }) => {
+    await refreshCategories();
+    form.setValue('categoryId', newCategoryId);
+  };
   const onSubmit = async (data: ProductFormValues) => {
     if (!activeBusiness?.id) {
       toast.error('No active business selected');
@@ -228,24 +183,6 @@ export default function AddProductForm() {
     } catch (err) {
       toast.error('File upload failed. Please try again.');
     }
-  };
-
-  const handleCreateCategory = () => {
-    if (!activeBusiness?.id) {
-      toast.error('No active business selected');
-      return;
-    }
-
-    if (!newCategoryName.trim()) {
-      toast.error('Category name is required');
-      return;
-    }
-
-    createCategoryMutation.mutate({
-      name: newCategoryName,
-      businessId: activeBusiness.id,
-      description: newCategoryDescription || undefined,
-    });
   };
 
   if (!activeBusiness) {
@@ -403,39 +340,41 @@ export default function AddProductForm() {
                     <div className="flex gap-2">
                       <Select
                         onValueChange={field.onChange}
-                        defaultValue={field.value}
+                        value={field.value}
                       >
                         <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a category" />
+                          <SelectTrigger
+                            disabled={
+                              categoriesLoading ||
+                              !categories ||
+                              categories.length === 0
+                            }
+                          >
+                            <SelectValue
+                              placeholder={
+                                categoriesLoading
+                                  ? 'Loading categories...'
+                                  : categories?.length === 0
+                                    ? 'No categories available'
+                                    : 'Select a category'
+                              }
+                            />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {categoriesLoading ? (
-                            <SelectItem value="loading" disabled>
-                              Loading...
-                            </SelectItem>
-                          ) : categories && categories.length > 0 ? (
+                          <span className="p-2 text-xs">Select a Category</span>
+                          <Separator className="mb-1" />
+                          {categories &&
+                            categories.length > 0 &&
                             categories.map((category: any) => (
                               <SelectItem key={category.id} value={category.id}>
                                 {category.name}
                               </SelectItem>
-                            ))
-                          ) : (
-                            <SelectItem value="none" disabled>
-                              No categories available
-                            </SelectItem>
-                          )}
+                            ))}
                         </SelectContent>
                       </Select>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={() => setIsCreatingCategory(true)}
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
+                      <AddCategory onCategoryCreated={handleCategoryCreated} />
+                      {/* Button to open create category dialog */}
                     </div>
                     <FormMessage />
                   </FormItem>
@@ -914,53 +853,6 @@ export default function AddProductForm() {
           </div>
         </form>
       </Form>
-
-      {/* Create Category Dialog */}
-      <Dialog open={isCreatingCategory} onOpenChange={setIsCreatingCategory}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create New Category</DialogTitle>
-            <DialogDescription>
-              Add a new category for your products
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium">Category Name *</label>
-              <Input
-                value={newCategoryName}
-                onChange={(e) => setNewCategoryName(e.target.value)}
-                placeholder="Enter category name"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium">Description</label>
-              <Textarea
-                value={newCategoryDescription}
-                onChange={(e) => setNewCategoryDescription(e.target.value)}
-                placeholder="Enter category description"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsCreatingCategory(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleCreateCategory}
-              disabled={createCategoryMutation.isPending}
-            >
-              {createCategoryMutation.isPending && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
-              Create
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }

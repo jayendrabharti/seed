@@ -4,12 +4,13 @@ import { AppRouterOutputType } from '../../server';
 import { clientTrpc } from '@seed/api/client';
 import { useBusiness } from './BusinessProvider';
 
-type Category =
+export type Category =
   AppRouterOutputType['category']['getCategoriesByBusinessId'][number];
 
 type CategoriesContextType = {
-  categories: Category[] | null;
+  categories: Category[] | undefined;
   isLoading: boolean;
+  refresh: () => Promise<void>;
 };
 
 const CategoriesContext = createContext<CategoriesContextType | undefined>(
@@ -20,14 +21,20 @@ export const CategoriesProvider = ({ children }: { children: ReactNode }) => {
   const { currentBusinessMembership } = useBusiness();
   const businessId = currentBusinessMembership?.business.id;
 
-  const { data, isLoading } =
-    clientTrpc.category.getCategoriesByBusinessId.useQuery(
-      businessId ? { businessId } : ({} as { businessId: string }),
-    );
-  const categories = data ?? null;
+  const {
+    data: categories,
+    isLoading,
+    refetch,
+  } = clientTrpc.category.getCategoriesByBusinessId.useQuery(
+    businessId ? { businessId } : ({} as { businessId: string }),
+  );
+
+  const refresh = async () => {
+    await refetch();
+  };
 
   return (
-    <CategoriesContext.Provider value={{ categories, isLoading }}>
+    <CategoriesContext.Provider value={{ categories, isLoading, refresh }}>
       {children}
     </CategoriesContext.Provider>
   );

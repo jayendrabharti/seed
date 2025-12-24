@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useSession } from '@/providers/SessionProvider';
 import { useRouter } from 'next/navigation';
@@ -64,13 +63,6 @@ export default function AccountPage() {
     router.push('/login?redirect=/account');
     return null;
   }
-
-  const initials =
-    user.name
-      ?.split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase() || user.email[0].toUpperCase();
 
   return (
     <div className="container mx-auto max-w-4xl space-y-6 p-6">

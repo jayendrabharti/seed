@@ -54,8 +54,8 @@ export const getUserProfileUploadUrl = protectedProcedure
   )
   .output(
     z.object({
-      uploadUrl: z.url(),
-      publicUrl: z.url(),
+      uploadUrl: z.string().url(),
+      publicUrl: z.string().url(),
       bucket: z.string(),
       key: z.string(),
       visibility: z.enum(['PUBLIC', 'PRIVATE']),
@@ -89,7 +89,7 @@ export const getUserProfileUploadUrl = protectedProcedure
 export const setProfilePicture = protectedProcedure
   .input(
     z.object({
-      imageUrl: z.url(),
+      imageUrl: z.string().url(),
     }),
   )
   .mutation(async ({ input: { imageUrl }, ctx: { userId } }) => {
@@ -103,7 +103,7 @@ export const setProfilePicture = protectedProcedure
 export const emailLogin = publicProcedure
   .input(
     z.object({
-      email: z.email(),
+      email: z.string().email(),
     }),
   )
   .mutation(async ({ input: { email } }) => {
@@ -181,7 +181,7 @@ export const emailLogin = publicProcedure
 export const emailVerify = publicProcedure
   .input(
     z.object({
-      email: z.email(),
+      email: z.string().email(),
       otp: z.string().length(6),
     }),
   )

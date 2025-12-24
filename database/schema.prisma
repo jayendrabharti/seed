@@ -131,7 +131,7 @@ model Product {
 
   // Identification
   sku     String  @unique
-  barcode String? @unique
+  barcode String?
 
   // Product Specifications
   brand      String?

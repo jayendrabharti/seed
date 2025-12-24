@@ -14,7 +14,7 @@ const envSchema = z.object({
     .default('development'),
 
   // Frontend
-  FRONTEND_URL: z.url('FRONTEND_URL must be a valid URL'),
+  FRONTEND_URL: z.string().url('FRONTEND_URL must be a valid URL'),
 
   REFRESH_TOKEN_SECRET: z.string().min(1, 'REFRESH_TOKEN_SECRET is required'),
   ACCESS_TOKEN_SECRET: z.string().min(1, 'ACCESS_TOKEN_SECRET is required'),
@@ -37,6 +37,7 @@ const envSchema = z.object({
 
   // Database
   DATABASE_URL: z
+    .string()
     .url('DATABASE_URL must be a valid URL')
     .refine(
       (url) => url.startsWith('postgresql://') || url.startsWith('postgres://'),
@@ -55,7 +56,7 @@ const envSchema = z.object({
     .regex(/^\d+$/, 'SMTP_PORT must be a valid number')
     .default('587'),
   SMTP_HOST: z.string().min(1, 'SMTP_HOST is required'),
-  SMTP_MAIL: z.email('SMTP_MAIL must be a valid email'),
+  SMTP_MAIL: z.string().email('SMTP_MAIL must be a valid email'),
 
   // AWS S3 Configuration
   AWS_REGION: z.string().min(1, 'AWS_REGION is required'),
@@ -64,7 +65,7 @@ const envSchema = z.object({
   AWS_S3_BUCKET_NAME: z.string().min(1, 'AWS_S3_BUCKET_NAME is required'),
 
   // Optional Test Configuration
-  TEST_MAIL: z.email('TEST_MAIL must be a valid email').optional(),
+  TEST_MAIL: z.string().email('TEST_MAIL must be a valid email').optional(),
   TEST_OTP: z
     .string()
     .regex(/^\d+$/, 'TEST_OTP must contain only digits')
